@@ -3,7 +3,7 @@
 <!-- markdownlint-disable MD007 -->
 <!-- markdownlint-disable MD045 -->
 
-# Joplin note overview <img src=img/icon_32.png>
+# Joplin Plugin: Note overview <img src=img/icon_32.png>
 
 A note overview is created based on the defined search and the specified fields.
 
@@ -30,6 +30,41 @@ A note overview is created based on the defined search and the specified fields.
     - [excerpt](#excerpt)
     - [details](#details)
     - [count](#count)
+    - [listview](#listview)
+    - [link](#link)
+    - [status](#status)
+- [Examples](#examples)
+    - [ToDo Overview](#todo-overview)
+    - [Show all ToDos with status](#show-all-todos-with-status)
+    - [Open ToDos for the next 7 days and overdue ToDos](#open-todos-for-the-next-7-days-and-overdue-todos)
+    - [Exclude ToDos with no due date](#exclude-todos-with-no-due-date)
+    - [Show all ToDos with no due date](#show-all-todos-with-no-due-date)
+    - [Rename fields](#rename-fields)
+    - [Notes without a tag](#notes-without-a-tag)
+    - [Notes created last 7 days](#notes-created-last-7-days)
+    - [Cooking recipes overview](#cooking-recipes-overview)
+    - [Details option](#details-option)
+    - [Change count for single overview](#change-count-for-single-overview)
+    - [Change to listview no linbreak](#change-to-listview-no-linbreak)
+    - [Combine notes dynamically](#combine-notes-dynamically)
+    - [Show all uncompleted checkboxes ToDos](#show-all-uncompleted-checkboxes-todos)
+    - [Disable automatic note overview update for one note overview](#disable-automatic-note-overview-update-for-one-note-overview)
+    - [Show the last 5 edited notes](#show-the-last-5-edited-notes)
+- [Plugin options](#plugin-options)
+- [Keyboard Shortcuts](#keyboard-shortcuts)
+- [FAQ](#faq)
+    - [The note overview is not updated](#the-note-overview-is-not-updated)
+    - [Error: Nested mappings are not allowed in compact mappings](#error-nested-mappings-are-not-allowed-in-compact-mappings)
+    - [Error: Implicit map keys need to be followed by map values](#error-implicit-map-keys-need-to-be-followed-by-map-values)
+    - [Error: All collection items must start at the same column](#error-all-collection-items-must-start-at-the-same-column)
+    - [Error: e.slice is not a function](#error-eslice-is-not-a-function)
+- [Develop](#develop)
+    - [Build](#build)
+    - [Updating the plugin framework](#updating-the-plugin-framework)
+- [Changelog](#changelog)
+- [Links](#links)
+
+<!-- /TOC -->
     - [listview](#listview)
     - [link](#link)
     - [status](#status)
