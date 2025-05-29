@@ -14,6 +14,11 @@ type OverviewOptions = {
   escapeForTable: boolean;
   link: OverviewOptionsLink;
   datetimeSettings: OverviewOptionsDatetime;
+  view?: 'table' | 'list' | 'tiles'; // Added view property with specific allowed values
+  tile?: { // Added tile property for tile-specific settings
+    maxTitleLength?: number;
+    maxSnippetLength?: number;
+  };
 };
 
 type OverviewOptionsLink = {

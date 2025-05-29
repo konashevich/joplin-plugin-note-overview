@@ -5,11 +5,158 @@
 }
 
 #noteoverview {
-  width: fit-content;
-  display: block;
+  /* Existing styles might be adjusted or removed if 
+     .note-overview-container replaces its functionality.
+     For now, let's assume #noteoverview might be a wrapper 
+     around .note-overview-container or be removed later. 
+     If it's a direct parent, some properties might conflict or be redundant.
+     Let's keep existing styles for now and add new ones.
+  */
+  width: 100%; /* Changed from fit-content to allow container to manage width */
+  display: block; /* This might be overridden by flex/grid if #noteoverview becomes the container */
   flex-direction: column;
   min-width: 400px;
   overflow-wrap: break-word;
   font-size: var(--joplin-font-size);
   font-family: var(--joplin-font-family);
+}
+
+.note-overview-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  padding: 10px;
+  gap: 10px; /* For spacing between tiles, alternative to margin on tiles themselves */
+}
+
+.note-tile {
+  background-color: var(--joplin-background-color-hover);
+  border: 1px solid var(--joplin-divider-color);
+  border-radius: 8px;
+  padding: 15px; /* Adjusted to 15px from 10-15px range */
+  margin: 0; /* Removed individual margin as container 'gap' will handle spacing */
+  width: calc(25% - 20px); /* Responsive width, assuming 4 tiles per row and accounting for gap */
+  min-width: 200px; /* Minimum width for smaller screens / fewer tiles */
+  max-width: 250px; /* Maximum width */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 350px; /* Added a fixed height for uniform tile size, can be adjusted */
+}
+
+.note-tile-image {
+  width: 100%; /* Changed from max-width for consistency within fixed height */
+  height: 120px; /* Fixed height */
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.note-tile-title {
+  font-size: 1.1em;
+  font-weight: bold;
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap; /* Single line truncation */
+}
+
+.note-tile-snippet {
+  font-size: 0.9em;
+  margin-bottom: 10px;
+  color: var(--joplin-color-faded);
+  display: -webkit-box;
+  -webkit-line-clamp: 3; /* Limits to 3 lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex-grow: 1; /* Allows snippet to take available space before tags */
+}
+
+.note-tile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: auto; /* Pushes tags to the bottom */
+}
+
+.note-tile-tag {
+  background-color: var(--joplin-background-color-soft);
+  color: var(--joplin-color-faded);
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 0.8em;
+}
+
+/* Note Tile Color Styling */
+.note-tile-color-red {
+  border-color: rgb(255, 0, 0) !important;
+  background-color: rgba(255, 0, 0, 0.2) !important;
+}
+
+.note-tile-color-blue {
+  border-color: rgb(0, 0, 255) !important;
+  background-color: rgba(0, 0, 255, 0.2) !important;
+}
+
+.note-tile-color-yellow {
+  border-color: rgb(255, 255, 0) !important;
+  background-color: rgba(255, 255, 0, 0.2) !important;
+}
+
+.note-tile-color-green {
+  border-color: rgb(0, 128, 0) !important;
+  background-color: rgba(0, 128, 0, 0.2) !important;
+}
+
+.note-tile-color-orange {
+  border-color: rgb(255, 165, 0) !important;
+  background-color: rgba(255, 165, 0, 0.2) !important;
+}
+
+.note-tile-color-purple {
+  border-color: rgb(128, 0, 128) !important;
+  background-color: rgba(128, 0, 128, 0.2) !important;
+}
+
+.note-tile-color-pink {
+  border-color: rgb(255, 192, 203) !important;
+  background-color: rgba(255, 192, 203, 0.2) !important;
+}
+
+.note-tile-color-brown {
+  border-color: rgb(165, 42, 42) !important;
+  background-color: rgba(165, 42, 42, 0.2) !important;
+}
+
+.note-tile-color-gray {
+  border-color: rgb(128, 128, 128) !important;
+  background-color: rgba(128, 128, 128, 0.2) !important;
+}
+
+/* Special handling for White tile */
+.note-tile-color-white {
+  border-color: rgb(220, 220, 220) !important; 
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+.note-tile-color-white .note-tile-title, 
+.note-tile-color-white .note-tile-snippet, 
+.note-tile-color-white .note-tile-tag,
+.note-tile-color-white .note-tile-title a { 
+  color: var(--joplin-color, #333333) !important; 
+}
+
+/* Special handling for Black tile */
+.note-tile-color-black {
+  border-color: rgb(0, 0, 0) !important;
+  background-color: rgba(0, 0, 0, 0.2) !important;
+}
+.note-tile-color-black .note-tile-title, 
+.note-tile-color-black .note-tile-snippet, 
+.note-tile-color-black .note-tile-tag,
+.note-tile-color-black .note-tile-title a { 
+  color: var(--joplin-background-color, #ffffff) !important; 
+}
+.note-tile-color-black .note-tile-tag { 
+  background-color: rgba(255, 255, 255, 0.2) !important; 
 }
