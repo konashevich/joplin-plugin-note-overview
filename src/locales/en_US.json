@@ -2,7 +2,7 @@
   "settings": {
     "updateInterval": {
       "label": "Update interval in minutes",
-      "description": "0 = disable automatic note overview creation"
+      "description": "0 = disable automatic Tiles Feed creation"
     },
     "updateOnSync": {
       "label": "Update after Joplin sync",
@@ -10,7 +10,7 @@
         "yes": "Yes",
         "no": "No"
       },
-      "description": "Update the Noteoverview after a Joplin syncronisation. Independent of the update interval"
+      "description": "Update the Tiles Feed after a Joplin syncronisation. Independent of the update interval"
     },
     "showNoteCount": {
       "label": "Show note count",
@@ -23,7 +23,7 @@
     },
     "showNoteCountText": {
       "label": "Note count text",
-      "description": "Text for the display of the found notes, %s is replace with the number of matched notes"
+      "description": "Text for the display of the found notes, {{count}} is replace with the number of matched notes"
     },
     "todoStatusOpen": {
       "label": "Field status: %s",
@@ -79,7 +79,8 @@
         "warn": "Warn",
         "error": "Error"
       }
-    }
+    },
+    "section.tilesFeed.label": "Tiles Feed"
   },
   "msg": {
     "error": {
@@ -88,6 +89,6 @@
     }
   },
   "command": {
-    "createNoteOverview": "Update note overview"
+    "getUpdateTilesFeed": "Get/Update Tiles Feed"
   }
 }

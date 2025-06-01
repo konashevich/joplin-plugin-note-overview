@@ -11,30 +11,20 @@ export interface OverviewOptions {
   excerpt?: ExcerptSettings;   // Excerpt generation settings
   details?: DetailsSettings;   // <details> tag settings
   count?: CountSettings;       // Note count display settings
-  listview?: ListViewSettings; // List view specific settings
   link?: LinkSettings;         // Link field settings
   status?: StatusSettings;     // Status text customization
   update?: 'manual' | string; // Update mode, e.g., "manual"
-  view?: 'table' | 'list' | 'tiles'; // Display view: table, list, or tiles
   tile?: TileSettings;         // Tile view specific settings
 
   // Processed/derived settings (mostly mandatory after processing in getOptions)
-  statusText: any; // TODO: Define specific type
-  // fields: string; // Already in user-provided, becomes mandatory after defaulting
-  // sortStr: string; // This was intermediate, now directly use sort and parse to orderBy/Dir
+  statusText: any;
   orderBy: string;
   orderDir: string;
-  // alias: string; // Already in user-provided
-  imageSettings: any; // Processed from image, TODO: Define specific type
-  excerptSettings: any; // Processed from excerpt, TODO: Define specific type
-  coloring: any; // TODO: Define specific type for coloring rules (e.g. for todos)
-  // count: CountSettings; // Already in user-provided
-  // details: DetailsSettings; // Already in user-provided
-  // listview: ListViewSettings; // Already in user-provided
-  escapeForTable: boolean; // Internal flag, set based on view
-  // link: LinkSettings; // Already in user-provided
-  datetimeSettings: ProcessedDatetimeSettings; // Processed from datetime
-  // tile: TileSettings; // Already in user-provided
+  imageSettings: any;
+  excerptSettings: any;
+  coloring: any;
+  datetimeSettings: ProcessedDatetimeSettings;
+  // Removed: view, listview, escapeForTable
 }
 
 // Specific settings structures for complex options
@@ -61,7 +51,7 @@ export interface ProcessedDatetimeSettings {
 export interface ImageSettings {
   nr?: number;
   exactnr?: boolean;
-  width?: number | string; // Allow string for potential "auto" or % values if CSS handles it
+  width?: number | string;
   height?: number | string;
   noDimensions?: boolean;
   class?: string;
@@ -74,7 +64,7 @@ export interface ExcerptSettings {
   removemd?: boolean;
   regex?: string;
   regexflags?: string;
-  imagename?: boolean; // From original code, check if still needed
+  imagename?: boolean;
 }
 
 export interface DetailsSettings {
@@ -88,20 +78,14 @@ export interface CountSettings {
   position?: 'above' | 'below';
 }
 
-export interface ListViewSettings {
-  separator?: string;
-  text?: string;
-  linebreak?: boolean;
-  prefix?: string;
-  suffix?: string;
-}
+// ListViewSettings removed
 
 export interface LinkSettings {
   caption?: string;
   html?: boolean;
 }
 
-export interface StatusSettings { // For customizing status text for notes/todos
+export interface StatusSettings {
   note?: string;
   todo?: {
     open?: string;

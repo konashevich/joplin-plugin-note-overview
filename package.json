@@ -1,5 +1,5 @@
 {
-  "name": "joplin-plugin-note-overview",
+  "name": "joplin-plugin-tiles-feed",
   "version": "1.7.1",
   "scripts": {
     "dist": "webpack --env joplin-plugin-config=buildMain && webpack --env joplin-plugin-config=buildExtraScripts && webpack --env joplin-plugin-config=createArchive",
@@ -14,7 +14,10 @@
   },
   "license": "MIT",
   "keywords": [
-    "joplin-plugin"
+    "joplin-plugin",
+    "tiles",
+    "feed",
+    "dashboard"
   ],
   "devDependencies": {
     "@joplin/lib": "~2.9",
@@ -74,5 +77,6 @@
   },
   "files": [
     "publish"
-  ]
+  ],
+  "description": "Generates a feed of notes displayed as tiles, similar to Google Keep."
 }

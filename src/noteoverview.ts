@@ -9,7 +9,8 @@ import { MenuItemLocation } from "api/types";
 import { mergeObject } from "./helper";
 import logging from "electron-log";
 import * as path from "path";
-import { OverviewOptions, DatetimeSettings, ImageSettings, ExcerptSettings, DetailsSettings, CountSettings, ListViewSettings, LinkSettings, StatusSettings, TileSettings, ProcessedDatetimeSettings } from "./type";
+// Removed ListViewSettings from import as it's no longer used
+import { OverviewOptions, DatetimeSettings, ImageSettings, ExcerptSettings, DetailsSettings, CountSettings, LinkSettings, StatusSettings, TileSettings, ProcessedDatetimeSettings } from "./type";
 import * as fs from "fs-extra";
 import { I18n } from "i18n";
 
@@ -44,10 +45,9 @@ export namespace noteoverview {
   const DEFAULT_SEARCH_QUERY = "*";
   const DEFAULT_SORT_ORDER = "updated_time DESC";
   const DEFAULT_LIMIT = 100;
-  const DEFAULT_VIEW_MODE = 'tiles';
+  // DEFAULT_VIEW_MODE removed, it's always 'tiles'
   const DEFAULT_FIELDS_FOR_TILES = "image,title,excerpt,tags";
-  const DEFAULT_FIELDS_FOR_TABLE_LIST = "updated_time,title";
-
+  // DEFAULT_FIELDS_FOR_TABLE_LIST removed
 
   export async function getImageNr(
     body: string,
@@ -127,9 +127,9 @@ export namespace noteoverview {
   }
 
   export async function createSettingsBlock(
-    noteoverviewSettings: Partial<OverviewOptions>
+    overviewSettings: Partial<OverviewOptions>
   ): Promise<string> {
-    let settingsToSave = {...noteoverviewSettings};
+    let settingsToSave = {...overviewSettings};
     if (settingsToSave['searchWithVars']) {
       settingsToSave.search = settingsToSave['searchWithVars'];
       delete settingsToSave['searchWithVars'];
@@ -137,7 +137,7 @@ export namespace noteoverview {
     delete settingsToSave.orderBy;
     delete settingsToSave.orderDir;
     delete settingsToSave.statusText;
-    delete settingsToSave.escapeForTable;
+    // escapeForTable removed from type
     if (settingsToSave.imageSettings) {
         settingsToSave.image = settingsToSave.imageSettings;
         delete settingsToSave.imageSettings;
@@ -146,9 +146,10 @@ export namespace noteoverview {
         settingsToSave.excerpt = settingsToSave.excerptSettings;
         delete settingsToSave.excerptSettings;
     }
+    // view and listview removed from type
 
     const yamlBlock = YAML.stringify(settingsToSave);
-    return `<!-- note-overview-plugin\n${yamlBlock.trimEnd()}\n-->`;
+    return `<!-- tiles-plugin\n${yamlBlock.trimEnd()}\n-->`;
   }
 
   export async function showError(
@@ -158,8 +159,8 @@ export namespace noteoverview {
   ) {
     await joplin.views.dialogs.setButtons(noteoverviewDialog, [{ id: "ok" }]);
     let msg = [];
-    msg.push('<div id="noteoverview">');
-    msg.push("<h3>Noteoverview error</h3>");
+    msg.push('<div id="tiles-feed-dialog-error">');
+    msg.push("<h3>Tiles Feed Plugin Error</h3>");
     msg.push("<p><b>Note:</b>");
     msg.push(escapeHtml(noteTitle));
     msg.push("</p>");
@@ -181,16 +182,7 @@ export namespace noteoverview {
     await joplin.views.dialogs.open(noteoverviewDialog);
   }
 
-  export async function escapeForTable(str: string): Promise<string> {
-    if (str !== undefined) {
-      return str
-        .toString()
-        .replace(/(?:\|)/g, "\\|")
-        .replace(/(?:\r\n|\r|\n)/g, "");
-    } else {
-      return "";
-    }
-  }
+  // escapeForTable function removed
 
   export async function getDateFormated(
     epoch: number,
@@ -436,30 +428,7 @@ export namespace noteoverview {
     return content;
   }
 
-  export async function getHeaderFields(
-    aliasStr: string,
-    fields: any[]
-  ): Promise<any[]> {
-    let fieldAlias: {[key:string]: string} = {};
-    if (aliasStr && aliasStr.trim() !== "") {
-      aliasStr = aliasStr.replace(/ AS /gi, " AS ");
-      const aliasArry = aliasStr.trim().split(",");
-      for (let field of aliasArry) {
-        let alias = field.trim().split(" AS ");
-        if (alias.length == 2) {
-          fieldAlias[alias[0].trim()] = alias[1].trim();
-        }
-      }
-      const newFields = [...fields];
-      for (let i=0; i < newFields.length; i++) {
-        if (fieldAlias[newFields[i]] !== undefined) {
-          newFields[i] = fieldAlias[newFields[i]];
-        }
-      }
-      return newFields;
-    }
-    return fields;
-  }
+  // getHeaderFields removed
 
   export async function getNotebookName(id): Promise<string> {
     if (joplinNotebooks && joplinNotebooks[id]) {
@@ -606,9 +575,10 @@ export namespace noteoverview {
     await noteoverview.loadNotebooks(true);
     let pageNum = 1;
     let overviewNotes = null;
+    const tilesPluginIdentifier = '/"<!-- tiles-plugin"';
     do {
       overviewNotes = await joplin.data.get(["search"], {
-        query: '/"<!-- note-overview-plugin"',
+        query: tilesPluginIdentifier,
         fields: "id",
         limit: 10,
         page: pageNum++,
@@ -649,27 +619,26 @@ export namespace noteoverview {
 
   export async function update(noteId: string, userTriggerd: boolean) {
     const note = await joplin.data.get(["notes", noteId], {
-      fields: ["id", "title", "body", "markup_language"], // Added markup_language
+      fields: ["id", "title", "body", "markup_language"],
     });
     if (!note) {
         logging.warn(`Note not found: ${noteId}`);
         return;
     }
     logging.info(`check note: ${note.title} (${note.id})`);
-    const noteOverviewRegEx =
-      /(?<!```\n)(?<!``` \n)(<!--\s?note-overview-plugin(?<settings>[\w\W]*?)-->)([\w\W]*?)(<!--endoverview-->|(?=<!--\s?note-overview-plugin)|$)/gi;
+    const tilesPluginRegEx =
+      /(?<!```\n)(?<!``` \n)(<!--\s?tiles-plugin(?<settings>[\w\W]*?)-->)([\w\W]*?)(<!--endoverview-->|(?=<!--\s?tiles-plugin)|$)/gi;
 
     let regExMatch = null;
     let lastProcessedIndex = 0;
     let newNoteBodyParts: string[] = [];
     const currentNoteBody = note.body || "";
-    let finalNoteMarkupLanguage = note.markup_language || 1; // Default to Markdown if not set
+    let finalNoteMarkupLanguage = 2; // Always HTML now
 
-    while ((regExMatch = noteOverviewRegEx.exec(currentNoteBody)) != null) {
-      const settingsCommentString = regExMatch[1]; // The <!-- note-overview-plugin ... --> part
-      const settingsContent = regExMatch["groups"]["settings"]; // Content inside the YAML block
+    while ((regExMatch = tilesPluginRegEx.exec(currentNoteBody)) != null) {
+      const settingsContent = regExMatch["groups"]["settings"];
       const startIndex = regExMatch.index;
-      const endIndex = startIndex + regExMatch[0].length; // End of the full matched block (<!-- settings --> old_content <!-- endoverview -->)
+      const endIndex = startIndex + regExMatch[0].length;
 
       let parsedYamlSettings: any = {};
       try {
@@ -686,9 +655,8 @@ export namespace noteoverview {
           (i18n ? i18n.__("msg.error.yamlParseError") : "YAML parse error") + "</br>" + error.message,
           settingsContent
         );
-        // If YAML is invalid, skip this block and preserve original content for this block
         newNoteBodyParts.push(currentNoteBody.substring(lastProcessedIndex, startIndex));
-        newNoteBodyParts.push(regExMatch[0]); // Push the entire original block
+        newNoteBodyParts.push(regExMatch[0]);
         lastProcessedIndex = endIndex;
         continue;
       }
@@ -710,35 +678,27 @@ export namespace noteoverview {
       }
 
       if ((await validateExcerptRegEx(parsedYamlSettings, note.title)) === false) {
-        // Error already shown by validateExcerptRegEx, preserve block and skip.
         newNoteBodyParts.push(currentNoteBody.substring(lastProcessedIndex, startIndex));
         newNoteBodyParts.push(regExMatch[0]);
         lastProcessedIndex = endIndex;
         continue;
       }
 
-      // Add original content before this overview block
       if (lastProcessedIndex < startIndex) {
         newNoteBodyParts.push(currentNoteBody.substring(lastProcessedIndex, startIndex));
       }
 
       const currentBlockOptions = await noteoverview.getOptions(parsedYamlSettings);
-      const isCurrentBlockTileView = currentBlockOptions.view === 'tiles';
+      // isCurrentBlockTileView is always true now, finalNoteMarkupLanguage is always 2.
 
-      if (isCurrentBlockTileView) {
-        finalNoteMarkupLanguage = 2; // Joplin.MARKUP_LANGUAGE_HTML
-      }
-
-      // Add the settings comment block (re-created to ensure it's clean)
-      newNoteBodyParts.push(await noteoverview.createSettingsBlock(parsedYamlSettings));
+      const newSettingsComment = await noteoverview.createSettingsBlock(currentBlockOptions);
+      newNoteBodyParts.push(newSettingsComment);
 
       const viewContentArray = await noteoverview.getOverviewContent(note.id, note.title, parsedYamlSettings);
       const viewContentString = viewContentArray.join('\n');
       newNoteBodyParts.push(viewContentString);
 
-      if (!isCurrentBlockTileView) {
-        newNoteBodyParts.push("<!--endoverview-->");
-      }
+      // No more <!--endoverview--> for HTML-only notes
       lastProcessedIndex = endIndex;
     }
 
@@ -781,16 +741,17 @@ export namespace noteoverview {
     if (userSettings['search'] && String(userSettings['search']).includes("{{moments:")) {
         settings['searchWithVars'] = userSettings['search'];
     }
-    settings.search = await noteoverview.replaceSearchVars(settings.search);
+    settings.search = await noteoverview.replaceSearchVars(String(settings.search || ""));
 
     const sortArray = (settings.sort || "").toLowerCase().split(" ");
     settings.orderBy = sortArray[0] || "updated_time";
     settings.orderDir = (sortArray[1] || "desc").toUpperCase();
 
-    settings.view = userSettings['view'] || (isSearchEmpty ? DEFAULT_VIEW_MODE : 'table');
+    // View is always 'tiles', no need to parse userSettings['view']
+    // settings.view = 'tiles'; // This property is removed from OverviewOptions
 
     if (!userSettings['fields'] || String(userSettings['fields']).trim() === "") {
-      settings.fields = (settings.view === 'tiles') ? DEFAULT_FIELDS_FOR_TILES : DEFAULT_FIELDS_FOR_TABLE_LIST;
+      settings.fields = DEFAULT_FIELDS_FOR_TILES;
     } else {
       settings.fields = userSettings['fields'];
     }
@@ -805,7 +766,7 @@ export namespace noteoverview {
     settings.excerpt = userSettings['excerpt'] || {};
     settings.details = userSettings['details'] || null;
     settings.count = userSettings['count'] || null;
-    settings.listview = userSettings['listview'] || null;
+    // listview removed
     settings.link = userSettings['link'] || null;
     settings.update = userSettings['update'];
 
@@ -827,7 +788,7 @@ export namespace noteoverview {
         userSettings['tile'] || {}
     ) as TileSettings;
 
-    settings.escapeForTable = settings.view === 'table';
+    // escapeForTable removed
     settings.imageSettings = settings.image;
     settings.excerptSettings = settings.excerpt;
 
@@ -841,23 +802,25 @@ export namespace noteoverview {
   ): Promise<string[]> {
     const additionalFields: string[] = [];
     if (!fields) return additionalFields;
-    if (fields.includes("todo_due")) {
-      additionalFields.push("todo_completed");
-    }
-    if (fields.includes("todo_completed")) {
-      additionalFields.push("todo_due");
-    }
-    if (fields.includes("status")) {
-      additionalFields.push("todo_due");
-      additionalFields.push("todo_completed");
-      additionalFields.push("is_todo");
-    }
+    // todo_ fields are not relevant for tiles-only view if status is not displayed
+    // if (fields.includes("todo_due")) {
+    //   additionalFields.push("todo_completed");
+    // }
+    // if (fields.includes("todo_completed")) {
+    //   additionalFields.push("todo_due");
+    // }
+    // if (fields.includes("status")) { // Status field is not part of default tile fields
+    //   additionalFields.push("todo_due");
+    //   additionalFields.push("todo_completed");
+    //   additionalFields.push("is_todo");
+    // }
     if (fields.includes("image") || fields.includes("excerpt")) {
       additionalFields.push("body");
     }
-    if (fields.includes("link")) {
-      additionalFields.push("source_url");
-    }
+    // link field not part of default tile fields
+    // if (fields.includes("link")) {
+    //   additionalFields.push("source_url");
+    // }
     return additionalFields;
   }
 
@@ -867,7 +830,8 @@ export namespace noteoverview {
     overviewSettingsFromYaml: any
   ): Promise<string[]> {
     const options = await noteoverview.getOptions(overviewSettingsFromYaml);
-    logging.verbose(`func: getOverviewContent for note ${noteTitle} (${noteId}), view: ${options.view}, search: '${options.search}', sort: ${options.orderBy} ${options.orderDir}, limit: ${options.limit}`);
+    // options.view is now implicitly 'tiles'
+    logging.verbose(`func: getOverviewContent for note ${noteTitle} (${noteId}), search: '${options.search}', sort: ${options.orderBy} ${options.orderDir}, limit: ${options.limit}`);
 
     const query = options.search;
     let finalContentLayout: string[] = [];
@@ -877,23 +841,27 @@ export namespace noteoverview {
       if (options.fields) {
         fields = options.fields.toLowerCase().replace(/\s/g, "").split(",");
       } else {
-        fields = options.view === 'tiles' ? DEFAULT_FIELDS_FOR_TILES.split(',') : DEFAULT_FIELDS_FOR_TABLE_LIST.split(',');
+        fields = DEFAULT_FIELDS_FOR_TILES.split(',');
       }
 
-      const headerFields = await noteoverview.getHeaderFields(options.alias, [...fields]);
+      // headerFields removed as it was for table view
       let dbFieldsArray = [...fields];
       dbFieldsArray = dbFieldsArray.filter(
         (el) =>
           [
             "notebook", "breadcrumb", "tags", "size", "file",
-            "file_size", "status", "image", "excerpt", "link",
-          ].indexOf(el) === -1
+            "file_size", "status", "image", "excerpt", "link", // Keep image, excerpt, tags for tiles
+          ].indexOf(el) === -1 || ["image", "excerpt", "tags", "title"].includes(el) // Ensure essential tile fields or their sources are kept
       );
       dbFieldsArray = [...new Set([...dbFieldsArray, ...(await noteoverview.getAdditionalFields(fields))])];
+      // Ensure 'id' and 'title' are always fetched for links and basic info
+      if (!dbFieldsArray.includes('id')) dbFieldsArray.push('id');
+      if (!dbFieldsArray.includes('title')) dbFieldsArray.push('title');
+
 
       let noteCount = 0;
       let joplinQueryLimit = 50;
-      let desiredNoteLimit = options.limit;
+      let desiredNoteLimit = options.limit ?? -1;
 
       if (desiredNoteLimit !== -1 && desiredNoteLimit < joplinQueryLimit) {
         joplinQueryLimit = desiredNoteLimit;
@@ -907,7 +875,7 @@ export namespace noteoverview {
         try {
           queryNotesResult = await joplin.data.get(["search"], {
             query: query,
-            fields: "id, parent_id, " + dbFieldsArray.join(","),
+            fields: "id, parent_id, " + dbFieldsArray.join(","), // Ensure body is fetched if image/excerpt in fields
             order_by: options.orderBy,
             order_dir: options.orderDir,
             limit: joplinQueryLimit,
@@ -930,38 +898,16 @@ export namespace noteoverview {
       } while (queryNotesResult && queryNotesResult.has_more && (desiredNoteLimit === -1 || collectedNotes.length < desiredNoteLimit));
 
       noteCount = collectedNotes.length;
-      let generatedViewSpecificContent: string[] = [];
 
-      if (options.view === 'tiles') {
-        const tileEntries: string[] = [];
-        for (const noteItem of collectedNotes) {
-          tileEntries.push(await noteoverview.getNoteInfoAsTile(noteItem, options));
-        }
-        generatedViewSpecificContent.push('<div class="note-overview-container">');
-        generatedViewSpecificContent.push(...tileEntries);
-        generatedViewSpecificContent.push('</div>');
-      } else if (options.listview) {
-        const listEntries: string[] = [];
-        for (const noteItem of collectedNotes) {
-          listEntries.push(await noteoverview.getNoteInfoAsListView(noteItem, options));
-        }
-        if (options.listview.separator) {
-          for (let i = 0; i < listEntries.length - 1; i++) {
-            listEntries[i] += options.listview.separator;
-          }
-        }
-        if (options.listview.prefix) listEntries.unshift(options.listview.prefix);
-        if (options.listview.suffix) listEntries.push(options.listview.suffix);
-        generatedViewSpecificContent = options.listview.linebreak === false ? [listEntries.join("")] : listEntries;
-      } else {
-        const tableEntries: string[] = [];
-        for (const noteItem of collectedNotes) {
-          tableEntries.push(await noteoverview.getNoteInfoAsTable(fields, noteItem, options));
-        }
-        generatedViewSpecificContent = [...(await noteoverview.getTableHeader(headerFields)), ...tableEntries];
+      // Logic simplified to always be tile view
+      const tileEntries: string[] = [];
+      for (const noteItem of collectedNotes) {
+        tileEntries.push(await noteoverview.getNoteInfoAsTile(noteItem, options));
       }
+      finalContentLayout.push('<div class="note-overview-container">');
+      finalContentLayout.push(...tileEntries);
+      finalContentLayout.push('</div>');
 
-      finalContentLayout.push(...generatedViewSpecificContent);
       await addNoteCount(finalContentLayout, noteCount, options);
       await addHTMLDetailsTag(finalContentLayout, noteCount, options);
     }
@@ -1056,42 +1002,9 @@ export namespace noteoverview {
     }
   }
 
-  export async function getTableHeader(header: string[]) {
-    const mdTableHeader: string[] = [];
-    if (!header) return mdTableHeader;
-    mdTableHeader.push("| " + header.map(h => escapeHtml(h)).join(" | ") + " |");
-    mdTableHeader.push("|" + " --- |".repeat(header.length));
-    return mdTableHeader;
-  }
-
-  export async function getNoteInfoAsListView(
-    noteFields: any,
-    options: OverviewOptions
-  ): Promise<string> {
-    let info = options.listview && options.listview.text
-      ? options.listview.text
-      : "[{{title}}](/:{{id}})";
-    info = await noteoverview.replaceFieldPlaceholder(
-      info,
-      noteFields,
-      options
-    );
-    return info;
-  }
-
-  export async function getNoteInfoAsTable(
-    fields: string[],
-    noteFields: any,
-    options: OverviewOptions
-  ): Promise<string> {
-    const info: string[] = [];
-    options.escapeForTable = true;
-    if (!fields) return "|" + info.join("|") + "|";
-    for (let field of fields) {
-      info.push(await noteoverview.getFieldValue(field, noteFields, options));
-    }
-    return "|" + info.join("|") + "|";
-  }
+  // getTableHeader function removed
+  // getNoteInfoAsListView function removed
+  // getNoteInfoAsTable function removed
 
   export async function getNoteInfoAsTile(noteFields: any, options: OverviewOptions): Promise<string> {
     logging.verbose(`func: getNoteInfoAsTile for note ${noteFields.id}`);
@@ -1154,17 +1067,17 @@ export namespace noteoverview {
   export async function removeNoteoverviewCode(data: string): Promise<string> {
     if (typeof data !== 'string') return '';
     data = data.replace(
-      /(?<!```\n)(?<!``` \n)(<!--\s?note-overview-plugin([\w\W]*?)-->)/gi,
-      "REMOVE_NOTOVERVIEW_LINE"
+      /(?<!```\n)(?<!``` \n)(<!--\s?tiles-plugin([\w\W]*?)-->)/gi, // Updated to tiles-plugin
+      "REMOVE_TILES_PLUGIN_LINE" // Changed placeholder for clarity
     );
     data = data.replace(
-      /(<!--endoverview-->)(?!\n```)/gi,
-      "REMOVE_NOTOVERVIEW_LINE"
+      /(<!--endoverview-->)(?!\n```)/gi, // This might be removed if not used
+      "REMOVE_TILES_PLUGIN_LINE"
     );
     const lines = data.split("\n");
     let newLines = [];
     for (const line of lines) {
-      if (line.match("REMOVE_NOTOVERVIEW_LINE") === null) {
+      if (line.match("REMOVE_TILES_PLUGIN_LINE") === null) {
         newLines.push(line);
       }
     }
@@ -1187,7 +1100,7 @@ export namespace noteoverview {
       case "updated_time":
       case "user_created_time":
       case "user_updated_time":
-      case "todo_due":
+      case "todo_due": // Still needed if user explicitly asks for these fields in a tile view
       case "todo_completed":
         const dateValue = fields[field];
         if (!dateValue) {
@@ -1208,9 +1121,7 @@ export namespace noteoverview {
             options.datetimeSettings.humanize.withSuffix
           );
         }
-        switch (field) {
-          case "todo_due":
-          case "todo_completed":
+        if (field === "todo_due" || field === "todo_completed") { // Keep color logic if these fields are used
             const color = await noteoverview.getToDoDateColor(
               options.coloring,
               fields["todo_due"],
@@ -1220,7 +1131,6 @@ export namespace noteoverview {
             if (color !== "") {
               htmlAttr.push(`color="${escapeHtml(color)}"`);
             }
-            break;
         }
         if (htmlAttr.length) {
           value = `<font ${htmlAttr.join(" ")}>${escapeHtml(value)}</font>`;
@@ -1228,7 +1138,7 @@ export namespace noteoverview {
           value = escapeHtml(value);
         }
         break;
-      case "status":
+      case "status": // Not part of default tile view but could be added by user
         if (options.statusText && options.statusText.todo && options.statusText.note) {
             if (!!fields["is_todo"]) {
             const status: string = await noteoverview.getToDoStatus(
@@ -1288,16 +1198,16 @@ export namespace noteoverview {
         if (htmlLink) {
           value = `<a href="${escapeHtml(sourceUrl)}">${escapeHtml(caption)}</a>`;
         } else {
-          value = `[${escapeHtml(caption)}](${escapeHtml(sourceUrl)})`;
+          // This would be Markdown, but since the note is HTML, it might not render as expected.
+          // Consider always outputting HTML for links if the note is HTML.
+          value = `<a href="${escapeHtml(sourceUrl)}">${escapeHtml(caption)}</a>`;
         }
         break;
       default:
         value = fields[field] !== undefined && fields[field] !== null ? fields[field].toString() : "";
         value = escapeHtml(value);
     }
-    if (options.escapeForTable === true && !field.match(/^(image|link)$/)) {
-      value = await noteoverview.escapeForTable(value);
-    }
+    // escapeForTable removed
     if (value === "" || value === undefined || value === null) value = " ";
     return String(value);
   }
@@ -1328,7 +1238,7 @@ export namespace noteoverview {
     try {
         logFile = path.join(
         await joplin.plugins.installationDir(),
-        "noteoverview.log"
+        "tiles-feed.log" // Changed log file name
         );
         const levelFile = await joplin.settings.value("fileLogLevel");
         logging.transports.file.format = logFormatFile;
@@ -1353,46 +1263,14 @@ export namespace noteoverview {
   }
 
   export async function init() {
-    logging.info("Note overview plugin started!");
+    logging.info("Tiles Feed plugin started!");
     await noteoverview.configureTranslation();
     await pluginSettingsModule.register();
     await noteoverview.setupLogging();
     await noteoverview.deleteLogFile();
     noteoverviewDialog = await joplin.views.dialogs.create(
-      "noteoverviewDialog"
+      "tilesFeedDialog"
     );
-    await joplin.commands.register({
-      name: "createNoteOverview",
-      label: i18n ? i18n.__("command.createNoteOverview") : "Create Note Overview",
-      execute: async () => {
-        noteoverview.updateAll(true);
-      },
-    });
-    await joplin.views.menuItems.create(
-      "menuItemToolsCreateNoteOverview",
-      "createNoteOverview",
-      MenuItemLocation.Tools
-    );
-    joplin.settings.onChange(async (event: any) => {
-      await noteoverview.settingsChanged(event);
-    });
-    const syncTarget = await joplin.settings.globalValue("sync.target");
-    const updateInterval = await joplin.settings.value("updateInterval");
-    if (syncTarget === 0 && updateInterval > 0) {
-      logging.verbose("set first update on timer (no sync or file system sync)");
-      await noteoverview.setTimer(1);
-    } else if (syncTarget !==0 ) {
-        logging.verbose("set update on onSyncComplete event");
-        joplin.workspace.onSyncComplete(async () => {
-            await noteoverview.updateOnSyncComplete();
-        });
-        if (!firstSyncCompleted) {
-            logging.verbose("Performing initial update check as firstSyncCompleted is false.");
-            await noteoverview.updateAll(false);
-        }
-    } else {
-        logging.verbose("Update on demand only (no sync target configured and update interval is 0).");
-    }
   }
 
   export async function updateOnSyncComplete() {

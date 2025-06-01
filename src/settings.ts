@@ -1,12 +1,12 @@
 import joplin from "api";
 import { SettingItemType } from "api/types";
-import { i18n } from "./noteoverview";
+import { i18n } from "./noteoverview"; // Keep i18n import for now
 
-export namespace settings {
+export namespace settings { // Keep namespace for now
   export async function register() {
-    await joplin.settings.registerSection("noteOverviewSection", {
-      label: "Note overview",
-      iconName: "fas fa-binoculars",
+    await joplin.settings.registerSection("tilesFeedSection", { // New section name
+      label: "Tiles Feed", // New label (will be localized later)
+      iconName: "fas fa-th-large", // Changed icon to something more tile-like
     });
 
     await joplin.settings.registerSettings({
@@ -15,15 +15,15 @@ export namespace settings {
         minimum: 0,
         maximum: 2880,
         type: SettingItemType.Int,
-        section: "noteOverviewSection",
+        section: "tilesFeedSection", // Updated section
         public: true,
-        label: i18n.__("settings.updateInterval.label"),
+        label: i18n.__("settings.updateInterval.label"), // Localization key will be updated later
         description: i18n.__("settings.updateInterval.description"),
       },
       updateOnSync: {
         value: "no",
         type: SettingItemType.String,
-        section: "noteOverviewSection",
+        section: "tilesFeedSection", // Updated section
         isEnum: true,
         public: true,
         label: i18n.__("settings.updateOnSync.label"),
@@ -36,7 +36,7 @@ export namespace settings {
       showNoteCount: {
         value: "off",
         type: SettingItemType.String,
-        section: "noteOverviewSection",
+        section: "tilesFeedSection", // Updated section
         isEnum: true,
         public: true,
         label: i18n.__("settings.showNoteCount.label"),
@@ -50,7 +50,7 @@ export namespace settings {
       showNoteCountText: {
         value: "Note count: {{count}}",
         type: SettingItemType.String,
-        section: "noteOverviewSection",
+        section: "tilesFeedSection", // Updated section
         public: true,
         advanced: true,
         label: i18n.__("settings.showNoteCountText.label"),
@@ -64,7 +64,7 @@ export namespace settings {
         value: "",
         advanced: true,
         type: SettingItemType.String,
-        section: "noteOverviewSection",
+        section: "tilesFeedSection", // Updated section
         public: true,
         label: i18n.__("settings.noteStatus.label", "note"),
         description: i18n.__("settings.noteStatus.description"),
@@ -73,7 +73,7 @@ export namespace settings {
         value: "",
         advanced: true,
         type: SettingItemType.String,
-        section: "noteOverviewSection",
+        section: "tilesFeedSection", // Updated section
         public: true,
         label: i18n.__("settings.todoStatusOpen.label", "open todo"),
         description: i18n.__("settings.todoStatusOpen.description"),
@@ -82,7 +82,7 @@ export namespace settings {
         value: "✔",
         advanced: true,
         type: SettingItemType.String,
-        section: "noteOverviewSection",
+        section: "tilesFeedSection", // Updated section
         public: true,
         label: i18n.__("settings.todoStatusDone.label", "todo completed"),
         description: i18n.__("settings.todoStatusDone.description"),
@@ -91,7 +91,7 @@ export namespace settings {
         value: "❗",
         advanced: true,
         type: SettingItemType.String,
-        section: "noteOverviewSection",
+        section: "tilesFeedSection", // Updated section
         public: true,
         label: i18n.__("settings.todoStatusOverdue.label", "todo over due"),
         description: i18n.__("settings.todoStatusOverdue.description"),
@@ -101,7 +101,7 @@ export namespace settings {
         value: "",
         advanced: true,
         type: SettingItemType.String,
-        section: "noteOverviewSection",
+        section: "tilesFeedSection", // Updated section
         public: true,
         label: i18n.__("settings.colorTodoOpen.label", "todo [open]"),
         description: i18n.__("settings.colorTodoOpen.description", "due_date"),
@@ -110,7 +110,7 @@ export namespace settings {
         value: "",
         advanced: true,
         type: SettingItemType.String,
-        section: "noteOverviewSection",
+        section: "tilesFeedSection", // Updated section
         public: true,
         label: i18n.__("settings.colorTodoWarning.label", "todo [warning]"),
         description: i18n.__(
@@ -123,7 +123,7 @@ export namespace settings {
         minimum: 0,
         maximum: 2880,
         type: SettingItemType.Int,
-        section: "noteOverviewSection",
+        section: "tilesFeedSection", // Updated section
         advanced: true,
         public: true,
         label: i18n.__("settings.todoWarningHours.label", "todo [warning]"),
@@ -136,7 +136,7 @@ export namespace settings {
         value: "red",
         advanced: true,
         type: SettingItemType.String,
-        section: "noteOverviewSection",
+        section: "tilesFeedSection", // Updated section
         public: true,
         label: i18n.__(
           "settings.colorTodoOpenOverdue.label",
@@ -151,7 +151,7 @@ export namespace settings {
         value: "limegreen,limegreen",
         advanced: true,
         type: SettingItemType.String,
-        section: "noteOverviewSection",
+        section: "tilesFeedSection", // Updated section
         public: true,
         label: i18n.__("settings.colorTodoDone.label", "todo [done]"),
         description: i18n.__("settings.colorTodoDone.description", {
@@ -163,7 +163,7 @@ export namespace settings {
         value: "orange,orange",
         advanced: true,
         type: SettingItemType.String,
-        section: "noteOverviewSection",
+        section: "tilesFeedSection", // Updated section
         public: true,
         label: i18n.__(
           "settings.colorTodoDoneOverdue.label",
@@ -178,7 +178,7 @@ export namespace settings {
         value: "",
         advanced: true,
         type: SettingItemType.String,
-        section: "noteOverviewSection",
+        section: "tilesFeedSection", // Updated section
         public: true,
         label: i18n.__(
           "settings.colorTodoDoneNodue.label",
@@ -192,7 +192,7 @@ export namespace settings {
       fileLogLevel: {
         value: "info",
         type: SettingItemType.String,
-        section: "noteOverviewSection",
+        section: "tilesFeedSection", // Updated section
         advanced: true,
         isEnum: true,
         public: true,

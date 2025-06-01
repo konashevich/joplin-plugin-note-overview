@@ -2,7 +2,7 @@
   "settings": {
     "updateInterval": {
       "label": "Aktualisierungs interval in minutes",
-      "description": "0 = deaktivert das automatische aktualisieren der note-overview"
+      "description": "0 = deaktivert das automatische aktualisieren der Tiles Feed"
     },
     "updateOnSync": {
       "label": "Aktualisier nach Joplin sync",
@@ -10,7 +10,7 @@
         "yes": "Ja",
         "no": "Nein"
       },
-      "description": "Aktualisiert die note-overview nach einer Joplin-Syncronisation. Unabhängig vom Aktualisierungsintervall"
+      "description": "Aktualisiert die Tiles Feed nach einer Joplin-Syncronisation. Unabhängig vom Aktualisierungsintervall"
     },
     "showNoteCount": {
       "label": "Anzahl Notizen anzeigen",
@@ -23,7 +23,7 @@
     },
     "showNoteCountText": {
       "label": "Notiz anzahl text",
-      "description": "Text für die Anzeige der gefundenen Notizen, %s wird durch die Anzahl der gefundenen Notizen ersetzt"
+      "description": "Text für die Anzeige der gefundenen Notizen, {{count}} wird durch die Anzahl der gefundenen Notizen ersetzt"
     },
     "todoStatusOpen": {
       "label": "Feld status: %s",
@@ -80,7 +80,8 @@
         "warn": "Warnung",
         "error": "Fehler"
       }
-    }
+    },
+    "section.tilesFeed.label": "Tiles Feed"
   },
   "msg": {
     "error": {
@@ -89,6 +90,6 @@
     }
   },
   "command": {
-    "createNoteOverview": "Aktualisiere note overview"
+    "getUpdateTilesFeed": "Tiles Feed abrufen/aktualisieren"
   }
 }
