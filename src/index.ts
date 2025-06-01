@@ -1,4 +1,5 @@
 import joplin from "api";
+import { MenuItemLocation } from "api/types"; // Added this line
 import { noteoverview } from "./noteoverview"; // Keep internal namespace for now
 
 joplin.plugins.register({
