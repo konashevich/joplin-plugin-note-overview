@@ -4,7 +4,7 @@ import * as naturalCompare from "string-natural-compare";
 import * as YAML from "yaml";
 import * as remark from "remark";
 import * as strip from "strip-markdown";
-import { settings as pluginSettingsModule } from "./settings"; // Changed alias to avoid confusion
+import { settings as pluginSettingsModule } from "./settings";
 import { MenuItemLocation } from "api/types";
 import { mergeObject } from "./helper";
 import logging from "electron-log";
@@ -41,7 +41,6 @@ export namespace noteoverview {
     "pink": "pink", "brown": "brown", "gray": "gray", "grey": "gray"
   };
 
-  // Default settings for overview
   const DEFAULT_SEARCH_QUERY = "*";
   const DEFAULT_SORT_ORDER = "updated_time DESC";
   const DEFAULT_LIMIT = 100;
@@ -139,7 +138,6 @@ export namespace noteoverview {
     delete settingsToSave.orderDir;
     delete settingsToSave.statusText;
     delete settingsToSave.escapeForTable;
-    // Make sure we save the raw 'image' and 'excerpt' settings, not 'imageSettings'/'excerptSettings'
     if (settingsToSave.imageSettings) {
         settingsToSave.image = settingsToSave.imageSettings;
         delete settingsToSave.imageSettings;
@@ -148,7 +146,6 @@ export namespace noteoverview {
         settingsToSave.excerpt = settingsToSave.excerptSettings;
         delete settingsToSave.excerptSettings;
     }
-
 
     const yamlBlock = YAML.stringify(settingsToSave);
     return `<!-- note-overview-plugin\n${yamlBlock.trimEnd()}\n-->`;
@@ -560,36 +557,6 @@ export namespace noteoverview {
     return await noteoverview.humanFrendlyStorageSize(size);
   }
 
-  export async function updateNoteBody(
-    newBodyStr: string,
-    noteId: string,
-    userTriggerd: boolean
-  ) {
-    logging.info("Update note: " + noteId);
-    const slectedNote = await joplin.workspace.selectedNote();
-    const codeView = await joplin.settings.globalValue("editor.codeView");
-    const noteVisiblePanes = await joplin.settings.globalValue(
-      "noteVisiblePanes"
-    );
-    if (
-      slectedNote && slectedNote.id === noteId &&
-      codeView === true &&
-      (noteVisiblePanes === "viewer" || userTriggerd === true)
-    ) {
-      logging.verbose("   Use replaceSelection");
-      await joplin.commands.execute("textSelectAll");
-      await joplin.commands.execute("replaceSelection", newBodyStr);
-    } else if (!slectedNote || slectedNote.id !== noteId) {
-      logging.verbose("   Use API (note not selected or different note selected)");
-      await joplin.data.put(["notes", noteId], null, {
-        body: newBodyStr,
-      });
-    }
-    else {
-      logging.verbose("   skipping update for note " + noteId + " (conditions not met)");
-    }
-  }
-
   export async function removeNewLineAt(
     content: string,
     begin: boolean,
@@ -682,7 +649,7 @@ export namespace noteoverview {
 
   export async function update(noteId: string, userTriggerd: boolean) {
     const note = await joplin.data.get(["notes", noteId], {
-      fields: ["id", "title", "body"],
+      fields: ["id", "title", "body", "markup_language"], // Added markup_language
     });
     if (!note) {
         logging.warn(`Note not found: ${noteId}`);
@@ -691,106 +658,104 @@ export namespace noteoverview {
     logging.info(`check note: ${note.title} (${note.id})`);
     const noteOverviewRegEx =
       /(?<!```\n)(?<!``` \n)(<!--\s?note-overview-plugin(?<settings>[\w\W]*?)-->)([\w\W]*?)(<!--endoverview-->|(?=<!--\s?note-overview-plugin)|$)/gi;
+
     let regExMatch = null;
-    let startOrgTextIndex = 0;
-    let newNoteBody: string[] = [];
+    let lastProcessedIndex = 0;
+    let newNoteBodyParts: string[] = [];
     const currentNoteBody = note.body || "";
+    let finalNoteMarkupLanguage = note.markup_language || 1; // Default to Markdown if not set
+
     while ((regExMatch = noteOverviewRegEx.exec(currentNoteBody)) != null) {
-      const settingsBlock = regExMatch["groups"]["settings"];
+      const settingsCommentString = regExMatch[1]; // The <!-- note-overview-plugin ... --> part
+      const settingsContent = regExMatch["groups"]["settings"]; // Content inside the YAML block
       const startIndex = regExMatch.index;
-      const endIndex = startIndex + regExMatch[0].length;
-      let noteOverviewSettingsFromYaml: any = {};
+      const endIndex = startIndex + regExMatch[0].length; // End of the full matched block (<!-- settings --> old_content <!-- endoverview -->)
+
+      let parsedYamlSettings: any = {};
       try {
-        const parsedYaml = YAML.parse(settingsBlock);
-        if (parsedYaml === null || typeof parsedYaml !== 'object') {
-          noteOverviewSettingsFromYaml = {};
+        const parsed = YAML.parse(settingsContent);
+        if (parsed === null || typeof parsed !== 'object') {
+          parsedYamlSettings = {};
         } else {
-          noteOverviewSettingsFromYaml = parsedYaml;
+          parsedYamlSettings = parsed;
         }
       } catch (error) {
         logging.error("YAML parse error: " + error.message);
         await noteoverview.showError(
           note.title,
           (i18n ? i18n.__("msg.error.yamlParseError") : "YAML parse error") + "</br>" + error.message,
-          settingsBlock
+          settingsContent
         );
-        return;
+        // If YAML is invalid, skip this block and preserve original content for this block
+        newNoteBodyParts.push(currentNoteBody.substring(lastProcessedIndex, startIndex));
+        newNoteBodyParts.push(regExMatch[0]); // Push the entire original block
+        lastProcessedIndex = endIndex;
+        continue;
       }
 
-      const originalSearchForSaving = noteOverviewSettingsFromYaml.search || "";
-
-      if (
-        noteOverviewSettingsFromYaml &&
-        noteOverviewSettingsFromYaml['update'] === 'manual'
-      ) {
-        logging.verbose("noteoverview update setting: manual");
-        if (userTriggerd == false) {
-          logging.verbose("skip update, not user triggerd");
-          newNoteBody.push(currentNoteBody.substring(startIndex, endIndex));
-          startOrgTextIndex = endIndex;
-          continue;
-        }
-        const selectedNote = await joplin.workspace.selectedNote();
-        if (selectedNote && userTriggerd == true && noteId !== selectedNote.id) {
-          logging.verbose(
-            "skip update, selected note " + selectedNote.id + " <> " + noteId
-          );
-          newNoteBody.push(currentNoteBody.substring(startIndex, endIndex));
-          startOrgTextIndex = endIndex;
-          continue;
-        }
+      if (parsedYamlSettings['update'] === 'manual' && !userTriggerd) {
+        logging.verbose("skip update for manual block, not user triggerd");
+        newNoteBodyParts.push(currentNoteBody.substring(lastProcessedIndex, startIndex));
+        newNoteBodyParts.push(regExMatch[0]);
+        lastProcessedIndex = endIndex;
+        continue;
       }
-      if (
-        (await validateExcerptRegEx(noteOverviewSettingsFromYaml, note.title)) === false
-      ) {
-        return;
+      const selectedNote = await joplin.workspace.selectedNote();
+      if (parsedYamlSettings['update'] === 'manual' && userTriggerd && selectedNote && noteId !== selectedNote.id) {
+        logging.verbose("skip update for manual block, selected note " + selectedNote.id + " <> " + noteId );
+        newNoteBodyParts.push(currentNoteBody.substring(lastProcessedIndex, startIndex));
+        newNoteBodyParts.push(regExMatch[0]);
+        lastProcessedIndex = endIndex;
+        continue;
       }
 
-      if (startOrgTextIndex != startIndex) {
-        newNoteBody.push(
-          await noteoverview.getSubNoteContent(
-            currentNoteBody,
-            startOrgTextIndex,
-            startIndex,
-            false
-          )
-        );
+      if ((await validateExcerptRegEx(parsedYamlSettings, note.title)) === false) {
+        // Error already shown by validateExcerptRegEx, preserve block and skip.
+        newNoteBodyParts.push(currentNoteBody.substring(lastProcessedIndex, startIndex));
+        newNoteBodyParts.push(regExMatch[0]);
+        lastProcessedIndex = endIndex;
+        continue;
       }
 
-      let settingsForSaving = { ...noteOverviewSettingsFromYaml };
-      if (settingsForSaving.search && String(settingsForSaving.search).includes("{{moments:")) {
-          settingsForSaving['searchWithVars'] = settingsForSaving.search;
-      } else if (originalSearchForSaving.includes("{{moments:")) { // If original had vars but current doesn't (e.g. empty search defaulted)
-          settingsForSaving['searchWithVars'] = originalSearchForSaving;
+      // Add original content before this overview block
+      if (lastProcessedIndex < startIndex) {
+        newNoteBodyParts.push(currentNoteBody.substring(lastProcessedIndex, startIndex));
       }
 
+      const currentBlockOptions = await noteoverview.getOptions(parsedYamlSettings);
+      const isCurrentBlockTileView = currentBlockOptions.view === 'tiles';
 
-      let noteOverviewRenderedContent = await noteoverview.getOverviewContent(
-        note.id,
-        note.title,
-        settingsForSaving
-      );
-      newNoteBody = [...newNoteBody, ...noteOverviewRenderedContent];
-
-      if (regExMatch[4] === "<!--endoverview-->") {
-        startOrgTextIndex = endIndex;
-      } else {
-        startOrgTextIndex = endIndex;
+      if (isCurrentBlockTileView) {
+        finalNoteMarkupLanguage = 2; // Joplin.MARKUP_LANGUAGE_HTML
       }
+
+      // Add the settings comment block (re-created to ensure it's clean)
+      newNoteBodyParts.push(await noteoverview.createSettingsBlock(parsedYamlSettings));
+
+      const viewContentArray = await noteoverview.getOverviewContent(note.id, note.title, parsedYamlSettings);
+      const viewContentString = viewContentArray.join('\n');
+      newNoteBodyParts.push(viewContentString);
+
+      if (!isCurrentBlockTileView) {
+        newNoteBodyParts.push("<!--endoverview-->");
+      }
+      lastProcessedIndex = endIndex;
     }
-    if (startOrgTextIndex < currentNoteBody.length) {
-      newNoteBody.push(
-        await noteoverview.getSubNoteContent(
-          currentNoteBody,
-          startOrgTextIndex,
-          currentNoteBody.length,
-          true
-        )
-      );
+
+    if (lastProcessedIndex < currentNoteBody.length) {
+      newNoteBodyParts.push(currentNoteBody.substring(lastProcessedIndex));
     }
-    const newNoteBodyStr = newNoteBody.join("\n");
-    if (currentNoteBody != newNoteBodyStr) {
-      await noteoverview.updateNoteBody(newNoteBodyStr, note.id, userTriggerd);
+
+    const newNoteBodyStr = newNoteBodyParts.join("\n");
+
+    if (currentNoteBody !== newNoteBodyStr || note.markup_language !== finalNoteMarkupLanguage) {
+      logging.info(`Updating note ${note.id}. Setting markup_language to: ${finalNoteMarkupLanguage}`);
+      await joplin.data.put(['notes', note.id], null, {
+          body: newNoteBodyStr,
+          markup_language: finalNoteMarkupLanguage,
+      });
+    } else {
+        logging.info(`Note ${note.id} content and markup_language unchanged. No update needed.`);
     }
   }
 
@@ -833,7 +798,7 @@ export namespace noteoverview {
     settings.statusText = await mergeObject(
       globalSettings.statusText,
       userSettings['status'] || null
-    ) as StatusSettings; // Cast to StatusSettings
+    ) as StatusSettings;
     settings.alias = userSettings['alias'] || "";
 
     settings.image = userSettings['image'] || {};
@@ -847,7 +812,7 @@ export namespace noteoverview {
     settings.coloring = await mergeObject(
       globalSettings.coloring,
       userSettings['coloring']
-    ); // Type any for now
+    );
     settings.datetimeSettings = await mergeObject(
       {
         date: globalSettings.dateFormat,
@@ -952,7 +917,7 @@ export namespace noteoverview {
           logging.error(error.message);
           let errorMsg = error.message.replace(/(.*)(:\sSELECT.*)/g, "$1");
           await noteoverview.showError(noteTitle, errorMsg, "");
-          return [await noteoverview.createSettingsBlock(overviewSettingsFromYaml || {}), "<!--endoverview-->"];
+          return [];
         }
 
         if (queryNotesResult && queryNotesResult.items) {
@@ -1000,9 +965,6 @@ export namespace noteoverview {
       await addNoteCount(finalContentLayout, noteCount, options);
       await addHTMLDetailsTag(finalContentLayout, noteCount, options);
     }
-
-    finalContentLayout.unshift(await noteoverview.createSettingsBlock(overviewSettingsFromYaml || {}));
-    finalContentLayout.push("<!--endoverview-->");
     return finalContentLayout;
   }
 
