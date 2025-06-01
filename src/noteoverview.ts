@@ -4,7 +4,7 @@ import * as naturalCompare from "string-natural-compare";
 import * as YAML from "yaml";
 import * as remark from "remark";
 import * as strip from "strip-markdown";
-import { settings as pluginSettings } from "./settings"; // Renamed to avoid conflict
+import { settings as pluginSettingsModule } from "./settings"; // Changed alias to avoid confusion
 import { MenuItemLocation } from "api/types";
 import { mergeObject } from "./helper";
 import logging from "electron-log";
@@ -42,7 +42,7 @@ export namespace noteoverview {
   };
 
   // Default settings for overview
-  const DEFAULT_SEARCH_QUERY = "*"; // Actual search term for "all notes"
+  const DEFAULT_SEARCH_QUERY = "*";
   const DEFAULT_SORT_ORDER = "updated_time DESC";
   const DEFAULT_LIMIT = 100;
   const DEFAULT_VIEW_MODE = 'tiles';
@@ -128,20 +128,27 @@ export namespace noteoverview {
   }
 
   export async function createSettingsBlock(
-    noteoverviewSettings: Partial<OverviewOptions> // Use Partial as not all settings might be there
+    noteoverviewSettings: Partial<OverviewOptions>
   ): Promise<string> {
     let settingsToSave = {...noteoverviewSettings};
-    // If searchWithVars was used, prefer that for saving back to the note
     if (settingsToSave['searchWithVars']) {
       settingsToSave.search = settingsToSave['searchWithVars'];
       delete settingsToSave['searchWithVars'];
     }
-    // Remove processed fields that are not part of YAML settings
     delete settingsToSave.orderBy;
     delete settingsToSave.orderDir;
     delete settingsToSave.statusText;
     delete settingsToSave.escapeForTable;
-    // imageSettings, excerptSettings etc. are actually image, excerpt in YAML
+    // Make sure we save the raw 'image' and 'excerpt' settings, not 'imageSettings'/'excerptSettings'
+    if (settingsToSave.imageSettings) {
+        settingsToSave.image = settingsToSave.imageSettings;
+        delete settingsToSave.imageSettings;
+    }
+    if (settingsToSave.excerptSettings) {
+        settingsToSave.excerpt = settingsToSave.excerptSettings;
+        delete settingsToSave.excerptSettings;
+    }
+
 
     const yamlBlock = YAML.stringify(settingsToSave);
     return `<!-- note-overview-plugin\n${yamlBlock.trimEnd()}\n-->`;
@@ -150,7 +157,7 @@ export namespace noteoverview {
   export async function showError(
     noteTitle: string,
     info: string = null,
-    noteoverviewSettingsText: string = null // Changed name for clarity
+    noteoverviewSettingsText: string = null
   ) {
     await joplin.views.dialogs.setButtons(noteoverviewDialog, [{ id: "ok" }]);
     let msg = [];
@@ -224,7 +231,7 @@ export namespace noteoverview {
   }
 
   export async function getToDoDateColor(
-    coloring: any, // TODO: Specific type
+    coloring: any,
     todo_due: number,
     todo_completed: number,
     type: string
@@ -232,7 +239,7 @@ export namespace noteoverview {
     logging.verbose("func: getToDoDateColor");
     const now = new Date();
     let colorType = "";
-    if (!coloring || !coloring.todo) return ""; // Guard against undefined coloring
+    if (!coloring || !coloring.todo) return "";
 
     if (todo_due === 0 && todo_completed === 0) {
       colorType = "open_nodue";
@@ -241,7 +248,7 @@ export namespace noteoverview {
     } else if (
       todo_due > now.getTime() &&
       todo_completed === 0 &&
-      coloring.todo.warningHours !== 0 && // Check specific property
+      coloring.todo.warningHours !== 0 &&
       todo_due - 3600 * coloring.todo.warningHours * 1000 < now.getTime()
     ) {
       colorType = "warning";
@@ -273,7 +280,7 @@ export namespace noteoverview {
     else return "";
   }
 
-  export async function getDefaultColoring(): Promise<any> { // TODO: Specific type
+  export async function getDefaultColoring(): Promise<any> {
     let coloring = {
       todo: {
         open_nodue: "",
@@ -371,9 +378,9 @@ export namespace noteoverview {
 
     let excerpt = "";
 
-    if (excerptRegex) { // Check if truthy
+    if (excerptRegex) {
       let matchRegex = null;
-      if (excerptRegexFlags) { // Check if truthy
+      if (excerptRegexFlags) {
         matchRegex = new RegExp(excerptRegex, excerptRegexFlags as string);
       } else {
         matchRegex = new RegExp(excerptRegex);
@@ -434,7 +441,7 @@ export namespace noteoverview {
 
   export async function getHeaderFields(
     aliasStr: string,
-    fields: any[] // Array of strings
+    fields: any[]
   ): Promise<any[]> {
     let fieldAlias: {[key:string]: string} = {};
     if (aliasStr && aliasStr.trim() !== "") {
@@ -446,7 +453,7 @@ export namespace noteoverview {
           fieldAlias[alias[0].trim()] = alias[1].trim();
         }
       }
-      const newFields = [...fields]; // Create a copy to modify
+      const newFields = [...fields];
       for (let i=0; i < newFields.length; i++) {
         if (fieldAlias[newFields[i]] !== undefined) {
           newFields[i] = fieldAlias[newFields[i]];
@@ -454,7 +461,7 @@ export namespace noteoverview {
       }
       return newFields;
     }
-    return fields; // Return original if no alias
+    return fields;
   }
 
   export async function getNotebookName(id): Promise<string> {
@@ -498,23 +505,22 @@ export namespace noteoverview {
                 id: id,
                 title: queryFolders.items[queryFolderKey].title,
                 parent_id: queryFolders.items[queryFolderKey].parent_id,
-                path: [] // Initialize path
+                path: []
             };
             }
         }
       } while (queryFolders && queryFolders.has_more);
       const getParentName = (id: string, notebookPath: string[]) => {
-        if (id === "" || !joplinNotebooks[id]) return; // Added check for joplinNotebooks[id]
-        if (joplinNotebooks[id].parent_id !== "" && joplinNotebooks[joplinNotebooks[id].parent_id]) { // Check parent exists
+        if (id === "" || !joplinNotebooks[id]) return;
+        if (joplinNotebooks[id].parent_id !== "" && joplinNotebooks[joplinNotebooks[id].parent_id]) {
             getParentName(joplinNotebooks[id].parent_id, notebookPath);
         }
         notebookPath.push(joplinNotebooks[id].title);
       };
       for (const key in joplinNotebooks) {
         const notebookPath: string[] = [];
-        // Check if path is already populated (e.g. by a previous call for a parent)
         if (joplinNotebooks[key].path && joplinNotebooks[key].path.length > 0) continue;
-        getParentName(joplinNotebooks[key].id, notebookPath); // Call with current note's ID
+        getParentName(joplinNotebooks[key].id, notebookPath);
         joplinNotebooks[key].path = notebookPath;
       }
     }
@@ -615,12 +621,12 @@ export namespace noteoverview {
     globalSettings.timeFormat = await joplin.settings.globalValue("timeFormat");
     globalSettings.statusText = await noteoverview.getDefaultStatusText();
     globalSettings.coloring = await noteoverview.getDefaultColoring();
-    const showNoteCount = await pluginSettings.value("showNoteCount"); // Use renamed import
+    const showNoteCount = await joplin.settings.value("showNoteCount");
     if (showNoteCount !== "off") {
       globalSettings.showNoteCount = {
         enable: true,
         position: showNoteCount,
-        text: await pluginSettings.value("showNoteCountText"),  // Use renamed import
+        text: await joplin.settings.value("showNoteCountText"),
       };
     } else {
       globalSettings.showNoteCount = { enable: false };
@@ -651,7 +657,7 @@ export namespace noteoverview {
   }
 
   export async function validateExcerptRegEx(
-    settings: Partial<OverviewOptions>, // Use Partial
+    settings: Partial<OverviewOptions>,
     title: string
   ): Promise<Boolean> {
     if (
@@ -693,11 +699,11 @@ export namespace noteoverview {
       const settingsBlock = regExMatch["groups"]["settings"];
       const startIndex = regExMatch.index;
       const endIndex = startIndex + regExMatch[0].length;
-      let noteOverviewSettingsFromYaml: any = {}; // Initialize as empty object
+      let noteOverviewSettingsFromYaml: any = {};
       try {
         const parsedYaml = YAML.parse(settingsBlock);
         if (parsedYaml === null || typeof parsedYaml !== 'object') {
-          noteOverviewSettingsFromYaml = {}; // Ensure it's an object for getOptions
+          noteOverviewSettingsFromYaml = {};
         } else {
           noteOverviewSettingsFromYaml = parsedYaml;
         }
@@ -708,18 +714,14 @@ export namespace noteoverview {
           (i18n ? i18n.__("msg.error.yamlParseError") : "YAML parse error") + "</br>" + error.message,
           settingsBlock
         );
-        // If YAML is invalid, we might want to preserve the original content of this block
-        // or skip processing it. For now, we'll return, which means the note won't be updated.
         return;
       }
 
-      // Store original search to save it back, before it's modified by replaceSearchVars
-      // This will be added to the object that is passed to createSettingsBlock
       const originalSearchForSaving = noteOverviewSettingsFromYaml.search || "";
 
       if (
         noteOverviewSettingsFromYaml &&
-        noteOverviewSettingsFromYaml['update'] === 'manual' // Use bracket notation
+        noteOverviewSettingsFromYaml['update'] === 'manual'
       ) {
         logging.verbose("noteoverview update setting: manual");
         if (userTriggerd == false) {
@@ -741,10 +743,9 @@ export namespace noteoverview {
       if (
         (await validateExcerptRegEx(noteOverviewSettingsFromYaml, note.title)) === false
       ) {
-        return; // Stop processing if regex is invalid
+        return;
       }
 
-      // Add original content before the settings block
       if (startOrgTextIndex != startIndex) {
         newNoteBody.push(
           await noteoverview.getSubNoteContent(
@@ -756,29 +757,24 @@ export namespace noteoverview {
         );
       }
 
-      // Prepare settings for saving back, including the potentially variable-replaced search
-      // The getOverviewContent will use getOptions which handles defaults and variable replacement.
       let settingsForSaving = { ...noteOverviewSettingsFromYaml };
-      if (settingsForSaving.search) { // If there was a search, store its "WithVars" version for saving
+      if (settingsForSaving.search && String(settingsForSaving.search).includes("{{moments:")) {
           settingsForSaving['searchWithVars'] = settingsForSaving.search;
-          // The actual search used for fetching will be processed in getOptions
+      } else if (originalSearchForSaving.includes("{{moments:")) { // If original had vars but current doesn't (e.g. empty search defaulted)
+          settingsForSaving['searchWithVars'] = originalSearchForSaving;
       }
 
 
       let noteOverviewRenderedContent = await noteoverview.getOverviewContent(
         note.id,
         note.title,
-        settingsForSaving // Pass the (potentially modified for saving) settings
+        settingsForSaving
       );
       newNoteBody = [...newNoteBody, ...noteOverviewRenderedContent];
 
       if (regExMatch[4] === "<!--endoverview-->") {
         startOrgTextIndex = endIndex;
       } else {
-        // This part needs to correctly determine the end of the *rendered* content
-        // The rendered content includes the settings block + the actual overview table/list/tiles + endoverview tag
-        // So, advancing startOrgTextIndex by endIndex is usually correct if the regex matches the whole block.
-        // If <!--endoverview--> is missing, regExMatch[0].length is the length of the matched block.
         startOrgTextIndex = endIndex;
       }
     }
@@ -808,21 +804,19 @@ export namespace noteoverview {
     const isSearchEmpty = !userSettings['search'] || String(userSettings['search']).trim() === "";
 
     if (isSearchEmpty) {
-      settings.search = DEFAULT_SEARCH_QUERY; // This is "*"
-      settings.sort = userSettings['sort'] || DEFAULT_SORT_ORDER; // User can override default sort
+      settings.search = DEFAULT_SEARCH_QUERY;
+      settings.sort = userSettings['sort'] || DEFAULT_SORT_ORDER;
       settings.limit = (userSettings['limit'] === undefined || userSettings['limit'] === null) ? DEFAULT_LIMIT : Number(userSettings['limit']);
     } else {
       settings.search = userSettings['search'];
-      settings.sort = userSettings['sort'] || "updated_time DESC"; // Default sort if search is present but sort is not
+      settings.sort = userSettings['sort'] || "updated_time DESC";
       settings.limit = (userSettings['limit'] === undefined || userSettings['limit'] === null) ? -1 : Number(userSettings['limit']);
     }
 
-    // Store the original search string if it contained variables, for saving back to the note
-    if (userSettings['search'] && userSettings['search'].includes("{{moments:")) {
+    if (userSettings['search'] && String(userSettings['search']).includes("{{moments:")) {
         settings['searchWithVars'] = userSettings['search'];
     }
     settings.search = await noteoverview.replaceSearchVars(settings.search);
-
 
     const sortArray = (settings.sort || "").toLowerCase().split(" ");
     settings.orderBy = sortArray[0] || "updated_time";
@@ -839,10 +833,9 @@ export namespace noteoverview {
     settings.statusText = await mergeObject(
       globalSettings.statusText,
       userSettings['status'] || null
-    );
+    ) as StatusSettings; // Cast to StatusSettings
     settings.alias = userSettings['alias'] || "";
 
-    // These are direct assignments from YAML, types in OverviewOptions should match these names
     settings.image = userSettings['image'] || {};
     settings.excerpt = userSettings['excerpt'] || {};
     settings.details = userSettings['details'] || null;
@@ -851,12 +844,11 @@ export namespace noteoverview {
     settings.link = userSettings['link'] || null;
     settings.update = userSettings['update'];
 
-
-    settings.coloring = await mergeObject( // Processed
+    settings.coloring = await mergeObject(
       globalSettings.coloring,
       userSettings['coloring']
-    );
-    settings.datetimeSettings = await mergeObject( // Processed
+    ); // Type any for now
+    settings.datetimeSettings = await mergeObject(
       {
         date: globalSettings.dateFormat,
         time: globalSettings.timeFormat,
@@ -865,19 +857,14 @@ export namespace noteoverview {
       userSettings['datetime']
     ) as ProcessedDatetimeSettings;
 
-    settings.tile = await mergeObject( // Processed
+    settings.tile = await mergeObject(
         { maxTitleLength: 50, maxSnippetLength: 100, },
         userSettings['tile'] || {}
     ) as TileSettings;
 
-    // Internal flags/processed settings not directly from YAML
-    settings.escapeForTable = settings.view === 'table'; // Example internal setting
-
-    // Convert to specific types for imageSettings and excerptSettings for internal use if needed
-    // For now, they are used directly as `options.image` and `options.excerpt`
+    settings.escapeForTable = settings.view === 'table';
     settings.imageSettings = settings.image;
     settings.excerptSettings = settings.excerpt;
-
 
     logging.verbose("Processed options:", settings);
     return settings as OverviewOptions;
@@ -1151,14 +1138,13 @@ export namespace noteoverview {
     let truncatedTitle = title.length > maxTitleLength ? title.substring(0, maxTitleLength) + "..." : title;
     let imageHtml = "";
     if (noteFields.body) {
-      const imageSettings: ImageSettings = { // Use ImageSettings type
+      const imageSettings: ImageSettings = {
         nr: 1,
         exactnr: true,
         noDimensions: true,
         class: "note-tile-image",
         alt: `Image for note: ${title.substring(0,30)}...`
       };
-      // Pass options.image directly if it's defined, otherwise use the constructed one
       const imgSrc = await noteoverview.getImageNr(noteFields.body, imageSettings.nr, options.image || imageSettings);
       if (imgSrc && !imgSrc.startsWith("![]")) {
         imageHtml = imgSrc;
@@ -1167,11 +1153,11 @@ export namespace noteoverview {
     let snippet = "";
     if (noteFields.body) {
       const maxSnippetLength = options.tile?.maxSnippetLength || 100;
-      const excerptSettings: ExcerptSettings = { // Use ExcerptSettings type
+      const excerptSettings: ExcerptSettings = {
         maxlength: maxSnippetLength,
         removemd: true,
         removenewline: true,
-        ...(options.excerpt || {}) // Merge with user-defined excerpt settings
+        ...(options.excerpt || {})
       };
       snippet = await noteoverview.getMarkdownExcerpt(noteFields.body, excerptSettings);
       snippet = escapeHtml(snippet);
@@ -1229,7 +1215,7 @@ export namespace noteoverview {
     options: OverviewOptions
   ): Promise<string> {
     logging.verbose("func: getFieldValue for " + field);
-    let value: any = ""; // Allow any type initially
+    let value: any = "";
     if (!fields) return " ";
     switch (field) {
       case "title":
@@ -1281,7 +1267,7 @@ export namespace noteoverview {
         }
         break;
       case "status":
-        if (options.statusText && options.statusText.todo && options.statusText.note) { // Check properties exist
+        if (options.statusText && options.statusText.todo && options.statusText.note) {
             if (!!fields["is_todo"]) {
             const status: string = await noteoverview.getToDoStatus(
                 fields["todo_due"],
@@ -1292,20 +1278,20 @@ export namespace noteoverview {
             value = options.statusText.note;
             }
         }
-        value = escapeHtml(String(value)); // Ensure value is string before escape
+        value = escapeHtml(String(value));
         break;
       case "excerpt":
         value = await noteoverview.getMarkdownExcerpt(
           fields["body"],
-          options.excerptSettings // This is now options.excerpt from YAML
+          options.excerptSettings
         );
         value = escapeHtml(value);
         break;
       case "image":
         value = await noteoverview.getImageNr(
           fields["body"],
-          options.imageSettings?.nr || 1, // Use options.imageSettings
-          options.imageSettings // Pass the whole object
+          options.imageSettings?.nr || 1,
+          options.imageSettings
         );
         break;
       case "file":
@@ -1351,7 +1337,7 @@ export namespace noteoverview {
       value = await noteoverview.escapeForTable(value);
     }
     if (value === "" || value === undefined || value === null) value = " ";
-    return String(value); // Ensure return is always string
+    return String(value);
   }
 
   export async function getSubNoteContent(
@@ -1382,7 +1368,7 @@ export namespace noteoverview {
         await joplin.plugins.installationDir(),
         "noteoverview.log"
         );
-        const levelFile = await pluginSettings.value("fileLogLevel"); // Use renamed import
+        const levelFile = await joplin.settings.value("fileLogLevel");
         logging.transports.file.format = logFormatFile;
         logging.transports.file.level = levelFile;
         logging.transports.file.resolvePath = () => logFile;
@@ -1407,7 +1393,7 @@ export namespace noteoverview {
   export async function init() {
     logging.info("Note overview plugin started!");
     await noteoverview.configureTranslation();
-    await pluginSettings.register(); // Use renamed import
+    await pluginSettingsModule.register();
     await noteoverview.setupLogging();
     await noteoverview.deleteLogFile();
     noteoverviewDialog = await joplin.views.dialogs.create(
@@ -1429,7 +1415,7 @@ export namespace noteoverview {
       await noteoverview.settingsChanged(event);
     });
     const syncTarget = await joplin.settings.globalValue("sync.target");
-    const updateInterval = await pluginSettings.value("updateInterval"); // Use renamed import
+    const updateInterval = await joplin.settings.value("updateInterval");
     if (syncTarget === 0 && updateInterval > 0) {
       logging.verbose("set first update on timer (no sync or file system sync)");
       await noteoverview.setTimer(1);
@@ -1450,17 +1436,17 @@ export namespace noteoverview {
   export async function updateOnSyncComplete() {
     logging.verbose("onSyncComplete Event");
     logging.verbose(
-      "updateOnSync: " + (await pluginSettings.value("updateOnSync")) // Use renamed import
+      "updateOnSync: " + (await joplin.settings.value("updateOnSync"))
     );
     if (!firstSyncCompleted) {
       logging.verbose("firstSyncCompleted event processing");
       firstSyncCompleted = true;
       await noteoverview.updateAll(false);
-      const updateInterval = await pluginSettings.value("updateInterval"); // Use renamed import
+      const updateInterval = await joplin.settings.value("updateInterval");
       if (updateInterval > 0) {
         await noteoverview.setTimer(updateInterval);
       }
-    } else if ((await pluginSettings.value("updateOnSync")) === "yes") { // Use renamed import
+    } else if ((await joplin.settings.value("updateOnSync")) === "yes") {
       await noteoverview.updateAll(false);
     }
   }
@@ -1469,7 +1455,7 @@ export namespace noteoverview {
     logging.verbose("Settings changed");
     if (event.keys.indexOf("updateInterval") !== -1) {
       await noteoverview.setTimer(
-        await pluginSettings.value("updateInterval") // Use renamed import
+        await joplin.settings.value("updateInterval")
       );
     }
     if (event.keys.indexOf("fileLogLevel") !== -1) {
@@ -1489,7 +1475,7 @@ export namespace noteoverview {
   }
 
   export async function runTimed() {
-    const updateInterval = await pluginSettings.value("updateInterval"); // Use renamed import
+    const updateInterval = await joplin.settings.value("updateInterval");
     if (updateInterval > 0) {
       logging.verbose("run timed update");
       await noteoverview.updateAll(false);
