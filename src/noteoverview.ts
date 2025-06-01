@@ -9,7 +9,6 @@ import { MenuItemLocation } from "api/types";
 import { mergeObject } from "./helper";
 import logging from "electron-log";
 import * as path from "path";
-// Removed ListViewSettings from import as it's no longer used
 import { OverviewOptions, DatetimeSettings, ImageSettings, ExcerptSettings, DetailsSettings, CountSettings, LinkSettings, StatusSettings, TileSettings, ProcessedDatetimeSettings } from "./type";
 import * as fs from "fs-extra";
 import { I18n } from "i18n";
@@ -42,12 +41,20 @@ export namespace noteoverview {
     "pink": "pink", "brown": "brown", "gray": "gray", "grey": "gray"
   };
 
-  const DEFAULT_SEARCH_QUERY = "*";
+  const DEFAULT_SEARCH_QUERY = "";
   const DEFAULT_SORT_ORDER = "updated_time DESC";
   const DEFAULT_LIMIT = 100;
-  // DEFAULT_VIEW_MODE removed, it's always 'tiles'
   const DEFAULT_FIELDS_FOR_TILES = "image,title,excerpt,tags";
-  // DEFAULT_FIELDS_FOR_TABLE_LIST removed
+
+  const VALID_NOTE_PROPERTIES = [
+    'id', 'parent_id', 'title', 'body', 'created_time', 'updated_time',
+    'is_conflict', 'latitude', 'longitude', 'altitude', 'author',
+    'source_application', 'source_url', 'is_todo', 'todo_due', 'todo_completed',
+    'source', 'order', 'user_created_time', 'user_updated_time',
+    'encryption_cipher_text', 'encryption_applied', 'markup_language',
+    'is_shared', 'share_id', 'conflict_original_id', 'master_key_id',
+  ];
+
 
   export async function getImageNr(
     body: string,
@@ -137,7 +144,6 @@ export namespace noteoverview {
     delete settingsToSave.orderBy;
     delete settingsToSave.orderDir;
     delete settingsToSave.statusText;
-    // escapeForTable removed from type
     if (settingsToSave.imageSettings) {
         settingsToSave.image = settingsToSave.imageSettings;
         delete settingsToSave.imageSettings;
@@ -146,7 +152,6 @@ export namespace noteoverview {
         settingsToSave.excerpt = settingsToSave.excerptSettings;
         delete settingsToSave.excerptSettings;
     }
-    // view and listview removed from type
 
     const yamlBlock = YAML.stringify(settingsToSave);
     return `<!-- tiles-plugin\n${yamlBlock.trimEnd()}\n-->`;
@@ -177,12 +182,10 @@ export namespace noteoverview {
       msg.push("</div>");
     }
     msg.push("</div>");
-    await joplin.views.dialogs.addScript(noteoverviewDialog, "./webview.css");
+    // Removed addScript for webview.css as it will be embedded
     await joplin.views.dialogs.setHtml(noteoverviewDialog, msg.join("\n"));
     await joplin.views.dialogs.open(noteoverviewDialog);
   }
-
-  // escapeForTable function removed
 
   export async function getDateFormated(
     epoch: number,
@@ -427,8 +430,6 @@ export namespace noteoverview {
     }
     return content;
   }
-
-  // getHeaderFields removed
 
   export async function getNotebookName(id): Promise<string> {
     if (joplinNotebooks && joplinNotebooks[id]) {
@@ -689,7 +690,6 @@ export namespace noteoverview {
       }
 
       const currentBlockOptions = await noteoverview.getOptions(parsedYamlSettings);
-      // isCurrentBlockTileView is always true now, finalNoteMarkupLanguage is always 2.
 
       const newSettingsComment = await noteoverview.createSettingsBlock(currentBlockOptions);
       newNoteBodyParts.push(newSettingsComment);
@@ -698,7 +698,6 @@ export namespace noteoverview {
       const viewContentString = viewContentArray.join('\n');
       newNoteBodyParts.push(viewContentString);
 
-      // No more <!--endoverview--> for HTML-only notes
       lastProcessedIndex = endIndex;
     }
 
@@ -706,7 +705,20 @@ export namespace noteoverview {
       newNoteBodyParts.push(currentNoteBody.substring(lastProcessedIndex));
     }
 
-    const newNoteBodyStr = newNoteBodyParts.join("\n");
+    let newNoteBodyStr = newNoteBodyParts.join("\n");
+
+    // Embed CSS
+    const pluginDir = await joplin.plugins.installationDir();
+    const cssFilePath = path.join(pluginDir, 'webview.css');
+    let cssString = "";
+    try {
+        cssString = await fs.readFile(cssFilePath, 'utf8');
+        newNoteBodyStr = `<style>\n${cssString}\n</style>\n${newNoteBodyStr}`;
+    } catch (readError) {
+        logging.error(`Failed to read webview.css at ${cssFilePath}:`, readError);
+        // Optionally show an error to the user or proceed without custom styles if critical
+    }
+
 
     if (currentNoteBody !== newNoteBodyStr || note.markup_language !== finalNoteMarkupLanguage) {
       logging.info(`Updating note ${note.id}. Setting markup_language to: ${finalNoteMarkupLanguage}`);
@@ -747,9 +759,6 @@ export namespace noteoverview {
     settings.orderBy = sortArray[0] || "updated_time";
     settings.orderDir = (sortArray[1] || "desc").toUpperCase();
 
-    // View is always 'tiles', no need to parse userSettings['view']
-    // settings.view = 'tiles'; // This property is removed from OverviewOptions
-
     if (!userSettings['fields'] || String(userSettings['fields']).trim() === "") {
       settings.fields = DEFAULT_FIELDS_FOR_TILES;
     } else {
@@ -766,7 +775,6 @@ export namespace noteoverview {
     settings.excerpt = userSettings['excerpt'] || {};
     settings.details = userSettings['details'] || null;
     settings.count = userSettings['count'] || null;
-    // listview removed
     settings.link = userSettings['link'] || null;
     settings.update = userSettings['update'];
 
@@ -788,40 +796,11 @@ export namespace noteoverview {
         userSettings['tile'] || {}
     ) as TileSettings;
 
-    // escapeForTable removed
     settings.imageSettings = settings.image;
     settings.excerptSettings = settings.excerpt;
 
     logging.verbose("Processed options:", settings);
     return settings as OverviewOptions;
-  }
-
-
-  export async function getAdditionalFields(
-    fields: string[]
-  ): Promise<string[]> {
-    const additionalFields: string[] = [];
-    if (!fields) return additionalFields;
-    // todo_ fields are not relevant for tiles-only view if status is not displayed
-    // if (fields.includes("todo_due")) {
-    //   additionalFields.push("todo_completed");
-    // }
-    // if (fields.includes("todo_completed")) {
-    //   additionalFields.push("todo_due");
-    // }
-    // if (fields.includes("status")) { // Status field is not part of default tile fields
-    //   additionalFields.push("todo_due");
-    //   additionalFields.push("todo_completed");
-    //   additionalFields.push("is_todo");
-    // }
-    if (fields.includes("image") || fields.includes("excerpt")) {
-      additionalFields.push("body");
-    }
-    // link field not part of default tile fields
-    // if (fields.includes("link")) {
-    //   additionalFields.push("source_url");
-    // }
-    return additionalFields;
   }
 
   export async function getOverviewContent(
@@ -830,33 +809,41 @@ export namespace noteoverview {
     overviewSettingsFromYaml: any
   ): Promise<string[]> {
     const options = await noteoverview.getOptions(overviewSettingsFromYaml);
-    // options.view is now implicitly 'tiles'
     logging.verbose(`func: getOverviewContent for note ${noteTitle} (${noteId}), search: '${options.search}', sort: ${options.orderBy} ${options.orderDir}, limit: ${options.limit}`);
 
     const query = options.search;
     let finalContentLayout: string[] = [];
 
     if (query) {
-      let fields = [];
-      if (options.fields) {
-        fields = options.fields.toLowerCase().replace(/\s/g, "").split(",");
-      } else {
-        fields = DEFAULT_FIELDS_FOR_TILES.split(',');
+      const userRequestedDisplayFields = (options.fields || DEFAULT_FIELDS_FOR_TILES).toLowerCase().replace(/\s/g, "").split(",");
+
+      let dbFieldsToQuery: string[] = [
+        'id', 'parent_id', 'title',
+        'is_todo', 'todo_due', 'todo_completed',
+        'updated_time', 'user_updated_time', 'user_created_time',
+        'body', 'source_url'
+      ];
+
+      userRequestedDisplayFields.forEach(field => {
+        if (field === 'image' || field === 'excerpt') {
+          if (!dbFieldsToQuery.includes('body')) dbFieldsToQuery.push('body');
+        } else if (field === 'link') {
+          if (!dbFieldsToQuery.includes('source_url')) dbFieldsToQuery.push('source_url');
+        } else if (field === 'status') {
+          if (!dbFieldsToQuery.includes('is_todo')) dbFieldsToQuery.push('is_todo');
+          if (!dbFieldsToQuery.includes('todo_due')) dbFieldsToQuery.push('todo_due');
+          if (!dbFieldsToQuery.includes('todo_completed')) dbFieldsToQuery.push('todo_completed');
+        } else if (VALID_NOTE_PROPERTIES.includes(field)) {
+          if (!dbFieldsToQuery.includes(field)) dbFieldsToQuery.push(field);
+        }
+      });
+
+      if (options.orderBy && VALID_NOTE_PROPERTIES.includes(options.orderBy) && !dbFieldsToQuery.includes(options.orderBy)) {
+        dbFieldsToQuery.push(options.orderBy);
       }
 
-      // headerFields removed as it was for table view
-      let dbFieldsArray = [...fields];
-      dbFieldsArray = dbFieldsArray.filter(
-        (el) =>
-          [
-            "notebook", "breadcrumb", "tags", "size", "file",
-            "file_size", "status", "image", "excerpt", "link", // Keep image, excerpt, tags for tiles
-          ].indexOf(el) === -1 || ["image", "excerpt", "tags", "title"].includes(el) // Ensure essential tile fields or their sources are kept
-      );
-      dbFieldsArray = [...new Set([...dbFieldsArray, ...(await noteoverview.getAdditionalFields(fields))])];
-      // Ensure 'id' and 'title' are always fetched for links and basic info
-      if (!dbFieldsArray.includes('id')) dbFieldsArray.push('id');
-      if (!dbFieldsArray.includes('title')) dbFieldsArray.push('title');
+      dbFieldsToQuery = [...new Set(dbFieldsToQuery)];
+      logging.verbose("Requesting DB fields:", dbFieldsToQuery.join(","));
 
 
       let noteCount = 0;
@@ -875,16 +862,15 @@ export namespace noteoverview {
         try {
           queryNotesResult = await joplin.data.get(["search"], {
             query: query,
-            fields: "id, parent_id, " + dbFieldsArray.join(","), // Ensure body is fetched if image/excerpt in fields
+            fields: dbFieldsToQuery.join(","),
             order_by: options.orderBy,
             order_dir: options.orderDir,
             limit: joplinQueryLimit,
             page: pageQueryNotes++,
           });
         } catch (error) {
-          logging.error(error.message);
-          let errorMsg = error.message.replace(/(.*)(:\sSELECT.*)/g, "$1");
-          await noteoverview.showError(noteTitle, errorMsg, "");
+          logging.error(`Error searching notes: ${error.message}. Query: ${query}, Fields: ${dbFieldsToQuery.join(",")}`);
+          await noteoverview.showError(noteTitle, `Error during search: ${error.message}. Requested DB fields: ${dbFieldsToQuery.join(",")}. Please check your 'fields' option for valid note properties.`, "");
           return [];
         }
 
@@ -899,7 +885,6 @@ export namespace noteoverview {
 
       noteCount = collectedNotes.length;
 
-      // Logic simplified to always be tile view
       const tileEntries: string[] = [];
       for (const noteItem of collectedNotes) {
         tileEntries.push(await noteoverview.getNoteInfoAsTile(noteItem, options));
@@ -1002,10 +987,6 @@ export namespace noteoverview {
     }
   }
 
-  // getTableHeader function removed
-  // getNoteInfoAsListView function removed
-  // getNoteInfoAsTable function removed
-
   export async function getNoteInfoAsTile(noteFields: any, options: OverviewOptions): Promise<string> {
     logging.verbose(`func: getNoteInfoAsTile for note ${noteFields.id}`);
     let title = noteFields.title ? noteFields.title : '';
@@ -1067,11 +1048,11 @@ export namespace noteoverview {
   export async function removeNoteoverviewCode(data: string): Promise<string> {
     if (typeof data !== 'string') return '';
     data = data.replace(
-      /(?<!```\n)(?<!``` \n)(<!--\s?tiles-plugin([\w\W]*?)-->)/gi, // Updated to tiles-plugin
-      "REMOVE_TILES_PLUGIN_LINE" // Changed placeholder for clarity
+      /(?<!```\n)(?<!``` \n)(<!--\s?tiles-plugin([\w\W]*?)-->)/gi,
+      "REMOVE_TILES_PLUGIN_LINE"
     );
     data = data.replace(
-      /(<!--endoverview-->)(?!\n```)/gi, // This might be removed if not used
+      /(<!--endoverview-->)(?!\n```)/gi,
       "REMOVE_TILES_PLUGIN_LINE"
     );
     const lines = data.split("\n");
@@ -1100,7 +1081,7 @@ export namespace noteoverview {
       case "updated_time":
       case "user_created_time":
       case "user_updated_time":
-      case "todo_due": // Still needed if user explicitly asks for these fields in a tile view
+      case "todo_due":
       case "todo_completed":
         const dateValue = fields[field];
         if (!dateValue) {
@@ -1121,7 +1102,7 @@ export namespace noteoverview {
             options.datetimeSettings.humanize.withSuffix
           );
         }
-        if (field === "todo_due" || field === "todo_completed") { // Keep color logic if these fields are used
+        if (field === "todo_due" || field === "todo_completed") {
             const color = await noteoverview.getToDoDateColor(
               options.coloring,
               fields["todo_due"],
@@ -1138,7 +1119,7 @@ export namespace noteoverview {
           value = escapeHtml(value);
         }
         break;
-      case "status": // Not part of default tile view but could be added by user
+      case "status":
         if (options.statusText && options.statusText.todo && options.statusText.note) {
             if (!!fields["is_todo"]) {
             const status: string = await noteoverview.getToDoStatus(
@@ -1193,21 +1174,14 @@ export namespace noteoverview {
         break;
       case "link":
         const caption = options.link?.caption || "Link";
-        const htmlLink = options.link?.html || false;
+        const htmlLink = options.link?.html || false; // Though this is always HTML now
         const sourceUrl = fields["source_url"] || "";
-        if (htmlLink) {
-          value = `<a href="${escapeHtml(sourceUrl)}">${escapeHtml(caption)}</a>`;
-        } else {
-          // This would be Markdown, but since the note is HTML, it might not render as expected.
-          // Consider always outputting HTML for links if the note is HTML.
-          value = `<a href="${escapeHtml(sourceUrl)}">${escapeHtml(caption)}</a>`;
-        }
+        value = `<a href="${escapeHtml(sourceUrl)}">${escapeHtml(caption)}</a>`;
         break;
       default:
         value = fields[field] !== undefined && fields[field] !== null ? fields[field].toString() : "";
         value = escapeHtml(value);
     }
-    // escapeForTable removed
     if (value === "" || value === undefined || value === null) value = " ";
     return String(value);
   }
@@ -1238,7 +1212,7 @@ export namespace noteoverview {
     try {
         logFile = path.join(
         await joplin.plugins.installationDir(),
-        "tiles-feed.log" // Changed log file name
+        "tiles-feed.log"
         );
         const levelFile = await joplin.settings.value("fileLogLevel");
         logging.transports.file.format = logFormatFile;
@@ -1400,3 +1374,208 @@ export namespace noteoverview {
   }
 }
 export { logging, i18n };
+
+[end of src/noteoverview.ts]
+
+[start of src/webview.css]
+/* Ensure the main webview body is transparent */
+body {
+  background-color: transparent !important;
+  margin: 0; /* Remove default body margin */
+  padding: 0; /* Remove default body padding */
+}
+
+/* Global styles for the plugin's webview content */
+#joplin-plugin-content {
+  width: 100%; /* Allow plugin content to fill available space */
+  background-color: transparent; /* User request: transparent background for the main content area */
+  color: var(--joplin-color);
+  font-family: var(--joplin-font-family);
+  font-size: var(--joplin-font-size);
+  box-sizing: border-box;
+}
+
+/* Styles for the wrapper div if still used, otherwise can be removed if not needed */
+#noteoverview { /* This ID is likely the main div injected by Joplin for HTML notes if no other is specified */
+  width: 100%;
+  background-color: transparent !important; /* Ensure wrapper is also transparent */
+}
+
+/* Main container for the note tiles */
+.note-overview-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); /* Responsive columns */
+  gap: 15px; /* Space between tiles */
+  padding: 15px; /* Padding around the whole container */
+  background-color: transparent; /* Ensure container background is transparent */
+}
+
+/* Individual tile styling */
+.note-tile {
+  background-color: var(--joplin-background-color-hover, #f0f0f0); /* Card background */
+  border: 1px solid var(--joplin-divider-color, #e0e0e0);
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for card effect */
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  word-wrap: break-word;
+  overflow: hidden; /* Prevents content from breaking out of the rounded corners */
+}
+
+/* Tile image styling */
+.note-tile-image {
+  width: 100%;
+  height: auto;
+  max-height: 150px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+/* Tile title styling */
+.note-tile-title {
+  font-size: 1.1em;
+  font-weight: bold;
+  margin-bottom: 8px;
+  line-height: 1.3;
+  color: var(--joplin-color, #333333);
+}
+
+.note-tile-title a,
+.note-tile-title a:visited {
+  text-decoration: none;
+  color: inherit;
+}
+
+.note-tile-title a:hover {
+  text-decoration: underline;
+}
+
+/* Tile snippet/excerpt styling */
+.note-tile-snippet {
+  font-size: 0.9em;
+  margin-bottom: 12px;
+  line-height: 1.4;
+  color: var(--joplin-color-faded, #555555);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
+}
+
+/* Container for tags at the bottom of the tile */
+.note-tile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+/* Individual tag styling */
+.note-tile-tag {
+  background-color: var(--joplin-background-color-soft, #e0e0e0);
+  color: var(--joplin-color-faded, #333333);
+  padding: 3px 7px;
+  border-radius: 4px;
+  font-size: 0.75em;
+}
+
+/* --- Note Tile Color Styling --- */
+.note-tile-color-red {
+  border-color: rgb(255, 0, 0) !important;
+  background-color: rgba(255, 0, 0, 0.15) !important;
+}
+
+.note-tile-color-blue {
+  border-color: rgb(0, 0, 255) !important;
+  background-color: rgba(0, 0, 255, 0.15) !important;
+}
+
+.note-tile-color-yellow {
+  border-color: rgb(255, 255, 0) !important;
+  background-color: rgba(255, 255, 0, 0.2) !important;
+}
+.note-tile-color-yellow .note-tile-title,
+.note-tile-color-yellow .note-tile-snippet,
+.note-tile-color-yellow .note-tile-tag,
+.note-tile-color-yellow .note-tile-title a {
+  color: #333 !important;
+}
+.note-tile-color-yellow .note-tile-tag {
+  background-color: rgba(0,0,0,0.1) !important;
+}
+
+
+.note-tile-color-green {
+  border-color: rgb(0, 128, 0) !important;
+  background-color: rgba(0, 128, 0, 0.15) !important;
+}
+
+.note-tile-color-orange {
+  border-color: rgb(255, 165, 0) !important;
+  background-color: rgba(255, 165, 0, 0.15) !important;
+}
+
+.note-tile-color-purple {
+  border-color: rgb(128, 0, 128) !important;
+  background-color: rgba(128, 0, 128, 0.15) !important;
+}
+
+.note-tile-color-pink {
+  border-color: rgb(255, 192, 203) !important;
+  background-color: rgba(255, 192, 203, 0.2) !important;
+}
+.note-tile-color-pink .note-tile-title,
+.note-tile-color-pink .note-tile-snippet,
+.note-tile-color-pink .note-tile-tag,
+.note-tile-color-pink .note-tile-title a {
+  color: #333 !important;
+}
+.note-tile-color-pink .note-tile-tag {
+  background-color: rgba(0,0,0,0.1) !important;
+}
+
+
+.note-tile-color-brown {
+  border-color: rgb(165, 42, 42) !important;
+  background-color: rgba(165, 42, 42, 0.15) !important;
+}
+
+.note-tile-color-gray {
+  border-color: rgb(128, 128, 128) !important;
+  background-color: rgba(128, 128, 128, 0.15) !important;
+}
+
+.note-tile-color-white {
+  border-color: rgb(200, 200, 200) !important;
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+.note-tile-color-white .note-tile-title,
+.note-tile-color-white .note-tile-snippet,
+.note-tile-color-white .note-tile-title a {
+  color: var(--joplin-color, #222222) !important;
+}
+.note-tile-color-white .note-tile-tag {
+  background-color: var(--joplin-background-color-soft, #efefef) !important;
+  color: var(--joplin-color-faded, #444444) !important;
+}
+
+.note-tile-color-black {
+  border-color: rgb(0, 0, 0) !important;
+  background-color: rgba(30, 30, 30, 0.8) !important;
+}
+.note-tile-color-black .note-tile-title,
+.note-tile-color-black .note-tile-snippet,
+.note-tile-color-black .note-tile-title a {
+  color: var(--joplin-background-color, #f0f0f0) !important;
+}
+.note-tile-color-black .note-tile-tag {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: var(--joplin-background-color-soft, #dddddd) !important;
+}
+
+[end of src/webview.css]

@@ -44,6 +44,7 @@ Generates a feed of notes displayed as tiles, similar to Google Keep.
 - [Keyboard Shortcuts](#keyboard-shortcuts)
 - [FAQ](#faq)
   - [The Tiles Feed is not updated](#the-tiles-feed-is-not-updated)
+  - [Error: "Error during search... Please check your 'fields' option..."](#error-error-during-search-please-check-your-fields-option)
   - [Error: Nested mappings are not allowed in compact mappings](#error-nested-mappings-are-not-allowed-in-compact-mappings)
   - [Error: Implicit map keys need to be followed by map values](#error-implicit-map-keys-need-to-be-followed-by-map-values)
   - [Error: All collection items must start at the same column](#error-all-collection-items-must-start-at-the-same-column)
@@ -102,13 +103,19 @@ Several of these blocks can be included in one note. The content is updated auto
 
 ### Default Behavior
 
-If you create a `tiles-plugin` block without specifying any options, or if the `search` option is empty, the plugin will automatically display a feed of the **100 most recently updated notes** as tiles.
-The default fields shown for these tiles will be: `image, title, excerpt, tags`.
-This default view will also convert the note to HTML.
+If you create a `tiles-plugin` block without specifying any options, or if the `search` option is empty (e.g., `search: ""`), the plugin will automatically display a feed of the **100 most recently updated items (notes and to-dos)** as tiles.
+The default fields shown for these tiles will be: `image, title, excerpt, tags`, and the default sort order will be `updated_time DESC`.
+This default view will also convert the note to HTML. See [Note Conversion to HTML](#note-conversion-to-html) for more details.
 
 Example of a minimal block invoking default behavior:
 ```yml
 <!-- tiles-plugin
+-->
+```
+Or:
+```yml
+<!-- tiles-plugin
+search: ""
 -->
 ```
 
@@ -136,7 +143,7 @@ Options are specified in YAML format within the `<!-- tiles-plugin ... -->` bloc
 ### search
 
 The search filter to find notes for the feed. Uses standard [Joplin search syntax](https://joplinapp.org/help/apps/search#search-filters).
-- **Default:** If omitted or empty, searches for all notes (`*`).
+- **Default:** If omitted or left empty (e.g., `search: ""`), it defaults to showing all notes and to-dos, sorted by modification date (most recent first), limited to 100 items.
 
 ```yml
 search: type:todo iscompleted:0 notebook:"Work"
@@ -164,17 +171,16 @@ search: created:{{moments:YYYYMMDD modify:-30d}}
 ### fields
 
 Comma-separated list of fields to fetch for each note to be displayed in the tiles.
-- **Default (if search is omitted or empty):** `image, title, excerpt, tags`
-- **Default (if search is specified):** `image, title, excerpt, tags` (The plugin is now tile-focused)
+- **Default:** `image, title, excerpt, tags` (This default is applied if `fields` is omitted, or if `search` is omitted/empty and `fields` is also omitted).
 
 Available Joplin fields can be found in the [API documentation](https://joplinapp.org/api/references/rest_api/#properties).
-Virtual fields available:
+Virtual fields available for display in tiles (ensure underlying data is fetched, e.g., `body` for `image` and `excerpt`):
 - `image`: First image from the note.
 - `excerpt`: A snippet of the note body.
 - `tags`: Comma-separated list of note tags.
 - `notebook`: Name of the note's parent notebook.
 - `breadcrumb`: Full path of the parent notebook.
-- `status` (for ToDos), `file`, `file_size`, `size` are less commonly used in tiles but can be fetched.
+- Other fields like `status` (for ToDos), `updated_time`, `created_time` can be fetched if added here and potentially used in custom tile templating (not yet supported) or if useful for sorting.
 
 ```yml
 fields: image, title, excerpt, tags, updated_time
@@ -211,7 +217,7 @@ tile:
 
 ### alias
 
-This allows renaming fields, primarily for internal data handling if custom field processing were to be added that refers to aliased names. Since tiles have a fixed structure, direct display of aliased field names is not a primary feature for tiles.
+This allows renaming fields for internal data processing. Since the tile structure is relatively fixed, this is less about changing display names on the tile and more about potentially aliasing fields if future advanced templating refers to them.
 Syntax: `<field> AS <new field name>`, multiple fields comma-separated.
 ```yml
 alias: updated_time AS ModifiedDate
@@ -219,7 +225,7 @@ alias: updated_time AS ModifiedDate
 
 ### datetime
 
-Customize date/time format for fields like `updated_time`, `created_time` if you choose to display them (e.g., by adding them to the `fields` list and customizing tile HTML, though default tiles don't show them).
+Customize date/time format if you include date fields (like `updated_time`, `created_time`) in the `fields` option and wish to display them (currently not part of the default tile structure).
 ```yml
 datetime:
   date: "YYYY-MM-DD"
@@ -238,7 +244,6 @@ image:
   nr: 1          # Default: 1. Which image to use (1st, 2nd, etc.).
   exactnr: true  # Default: true. If false, uses the last image if the specified `nr` is not found.
 ```
-(Width/height settings are no longer applicable as tile images are styled via CSS).
 
 ### excerpt
 
@@ -291,9 +296,15 @@ Tiles can be visually distinguished using specific tags on your notes:
 ## Examples
 
 ### Default Feed (Most Recent Notes)
-This shows the 100 most recently updated notes as tiles. The note containing this block will be converted to HTML.
+This shows the 100 most recently updated notes and to-dos as tiles, sorted by update time. The note containing this block will be converted to HTML.
 ```yml
 <!-- tiles-plugin
+-->
+```
+Or, equivalently:
+```yml
+<!-- tiles-plugin
+search: ""
 -->
 ```
 
@@ -334,17 +345,22 @@ count:
 
 ## Plugin options
 
-Settings for the plugin, accessible at `Tools > Options > Tiles Feed`. (Section name updated)
+Settings for the plugin, accessible at `Tools > Options > Tiles Feed`.
 
 ## Keyboard Shortcuts
 
 Under `Options > Keyboard Shortcuts` you can assign a keyboard shortcut for the following command:
-- `Get/Update Tiles Feed` (Command name updated)
+- `Get/Update Tiles Feed`
 
 ## FAQ
 
 ### The Tiles Feed is not updated
 See the [limitations](#limitations) section. Also, ensure the settings block starts with `<!-- tiles-plugin`.
+
+### Error: "Error during search... Please check your 'fields' option..."
+If you see an error message like "Error during search: ... no such column: ... Please check your 'fields' option for valid note properties.", it means one of the values you provided in the `fields` option in your `<!-- tiles-plugin ... -->` block is not a recognized note property that can be directly fetched from the database.
+
+The error message will also include a list of "Requested DB fields" that the plugin attempted to query. Compare this list with the valid note properties listed in the [Joplin API documentation](https://joplinapp.org/api/references/rest_api/#note-properties) or ensure you are using virtual fields like `image`, `excerpt`, or `tags` correctly as described in the `fields` option documentation above. Commonly needed fields like `body` (for images/excerpts) or `source_url` (for links, if you were using the `link` field) are automatically added to the database query if their corresponding virtual fields are requested.
 
 ### Error: Nested mappings are not allowed in compact mappings
 This error message occurs when a colon is used in the option value and an space character follows the colon. Just enclose the value of the option in quotes like `alias: "title AS : Title :"`.
