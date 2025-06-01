@@ -16,6 +16,7 @@ A note overview is created based on the defined search and the specified fields.
     - [Manual via file system](#manual-via-file-system)
     - [Manual via file via GUI](#manual-via-file-via-gui)
 - [Usage](#usage)
+  - [Default Behavior](#default-behavior)
   - [Limitations](#limitations)
 - [Codeblock options](#codeblock-options)
   - [search](#search)
@@ -23,6 +24,8 @@ A note overview is created based on the defined search and the specified fields.
   - [fields](#fields)
   - [sort](#sort)
   - [limit](#limit)
+  - [view](#view)
+  - [tile](#tile)
   - [alias](#alias)
   - [datetime](#datetime)
   - [image](#image)
@@ -32,6 +35,9 @@ A note overview is created based on the defined search and the specified fields.
   - [listview](#listview)
   - [link](#link)
   - [status](#status)
+- [Tile View and Color-Coding](#tile-view-and-color-coding)
+  - [Tile View](#tile-view)
+  - [Color-Coding Tiles](#color-coding-tiles)
 - [Examples](#examples)
   - [ToDo Overview](#todo-overview)
   - [Show all ToDos with status](#show-all-todos-with-status)
@@ -42,6 +48,7 @@ A note overview is created based on the defined search and the specified fields.
   - [Notes without a tag](#notes-without-a-tag)
   - [Notes created last 7 days](#notes-created-last-7-days)
   - [Cooking recipes overview](#cooking-recipes-overview)
+  - [Tile View Examples](#tile-view-examples)
   - [Details option](#details-option)
   - [Change count for single overview](#change-count-for-single-overview)
   - [Change to listview no linbreak](#change-to-listview-no-linbreak)
@@ -108,6 +115,17 @@ Several of these blocks can be included in one note, also between text.
 
 The note content is updated every x minutes (depending on your setting) or manualy by `Tools > Create Note overview`.
 
+### Default Behavior
+
+If you create an overview block without specifying any options, or if the `search` option is empty, the plugin will automatically display an overview of the **100 most recently updated notes** in a **tile view**.
+The default fields shown for these tiles will be: `image, title, excerpt, tags`.
+
+Example of a minimal block invoking default behavior:
+```yml
+<!-- note-overview-plugin
+-->
+```
+
 ### Limitations
 
 > ⚠ Adding and editing the code block does not work in the **Rich Text (WYSIWYG)** editor!
@@ -126,6 +144,7 @@ Options that can be specified in the in the code block using YAML syntax.
 
 The search filter which will be used to create the overview.
 [Documentation of search filters](https://joplinapp.org/help/apps/search#search-filters).
+If this option is omitted or empty, a default search for the 100 most recently updated notes will be performed (see [Default Behavior](#default-behavior)).
 
 ```yml
 search: type:todo
@@ -157,7 +176,7 @@ search: Logbook {{moments:DD-MM-YYYY modify:+1m,-1d}}
 
 ### fields
 
-Which fields should be output in the table.<br>
+Which fields should be output in the table or tiles.
 All fields of the note are available, a complete list of all field can be found [here](https://joplinapp.org/api/references/rest_api/#properties).
 
 In addition to the Joplin fields, there are the following virtual fields:
@@ -169,9 +188,13 @@ In addition to the Joplin fields, there are the following virtual fields:
 - `tags`: Assigned tags of the note
 - `notebook`: Folder in which the note is stored
 - `breadcrumb`: Folder breadcrumb (Folder path)
-- `image`: In this field a image resource from the note will be displayed. This field can be configured using the `image` option
-- `excerpt`: Displays an excerpt of the note body
+- `image`: In this field a image resource from the note will be displayed. This field can be configured using the `image` option. For the `tiles` view, this is used to display the first image.
+- `excerpt`: Displays an excerpt of the note body. For the `tiles` view, this is used for the snippet.
 - `link`: Display the `source_url`. This field can be configured using the `link` option
+
+If this option is omitted:
+- For `tiles` view, it defaults to `image, title, excerpt, tags`.
+- For `table` and `list` views, it defaults to `updated_time, title`.
 
 ```yml
 fields: todo_due, title, tags, notebook
@@ -180,6 +203,7 @@ fields: todo_due, title, tags, notebook
 ### sort
 
 By which field the output should be sorted. It can be only sorted by one field and it's not possible to sort by a virtual field!
+If `search` is omitted or empty, this defaults to `updated_time DESC`. Otherwise, it defaults to `title ASC`.
 
 ```yml
 sort: todo_due ASC
@@ -187,10 +211,34 @@ sort: todo_due ASC
 
 ### limit
 
-Displayes only the first x hits of the search. Without the limit option all results are displayed.
+Displays only the first x hits of the search.
+If `search` is omitted or empty and `limit` is not specified, this defaults to `100`. Otherwise, if not specified, all results are displayed.
 
 ```yml
 limit: 5
+```
+
+### view
+
+Determines the layout of the note overview.
+
+- `table`: (Default if `search` is specified) Displays notes in a markdown table.
+- `list`: Displays notes in a list format (requires `listview` options to be configured).
+- `tiles`: Displays notes in a Google Keep-style tile layout. Each tile shows title, first image (if any), an excerpt, and tags. (Default if `search` is not specified).
+
+Example:
+```yml
+view: tiles
+```
+
+### tile
+
+Specific options for the `tiles` view.
+
+```yml
+tile:
+  maxTitleLength: 50  # Max characters for tile title (default 50)
+  maxSnippetLength: 100 # Max characters for tile snippet (default 100)
 ```
 
 ### alias
@@ -240,8 +288,8 @@ This allows you to control the image displayed in the `image` field.
 - `exactnr`:
   `false` = If the image number is not found, the last available one is used.
   `true` = Only the exact image number is used.
-- `width`: The image is reduced to this width.
-- `height`: The image is reduced to this height
+- `width`: The image is reduced to this width. (Not applicable for `tiles` view)
+- `height`: The image is reduced to this height. (Not applicable for `tiles` view)
 
 ```yml
 image:
@@ -264,7 +312,7 @@ excerpt:
   regexflags: gmi
 ```
 
-- `maxlength`: Maximum length for the excerpt
+- `maxlength`: Maximum length for the excerpt. For `tiles` view, this can also be set via `tile.maxSnippetLength`.
 - `removenewline`: Remove new lines from excerpt, default `true`
 - `removemd`: Remove markdown from excerpt, default `true`
 - `regex`: Regular expression to match content for the excerpt. `maxlength` will be ignored if this option is used.
@@ -334,6 +382,28 @@ status:
     done: 🗹
     overdue: ⚠
 ```
+
+## Tile View and Color-Coding
+
+### Tile View
+
+The `tiles` view mode provides a visual layout inspired by Google Keep. Each note is displayed as a "tile" containing:
+- The note's title (truncated if it exceeds `tile.maxTitleLength`).
+- The first image found in the note body (if any).
+- A short snippet from the note body (length controlled by `tile.maxSnippetLength` or `excerpt.maxlength`).
+- Tags associated with the note.
+
+This view is particularly useful for a more visual overview of notes, especially those with images.
+
+### Color-Coding Tiles
+
+Note tiles can be color-coded by adding specific tags to the notes. This allows for quick visual differentiation.
+- **Supported Color Tags:** "Red", "Blue", "Yellow", "Green", "Orange", "Purple", "Black", "White", "Pink", "Brown", "Gray" (or "Grey").
+- **Application:** If a note has one of these tags, the corresponding tile will be styled with that color. The border will be the full color, and the background will be a lighter, semi-transparent version of the color.
+- **Priority:** If multiple color tags are present on a single note, the first one encountered (based on the order of tags fetched from Joplin) will determine the tile's color.
+- **Example:** To make a note tile appear red, add the tag `Red` to the note in Joplin. For a yellow tile, add the tag `Yellow`.
+
+Special considerations for text and tag visibility are made for "White" and "Black" tiles to ensure readability against the Joplin theme.
 
 ## Examples
 
@@ -419,6 +489,7 @@ sort: title DESC
 
 ### Cooking recipes overview
 
+This example uses the default table view.
 ```yml
 <!-- note-overview-plugin
 search: notebook:Cooking
@@ -430,6 +501,42 @@ image:
 ```
 
 <img src="img/example_image.jpg">
+
+### Tile View Examples
+
+#### Basic Tile View
+
+This example shows important project notes as tiles.
+```yml
+<!-- note-overview-plugin
+search: notebook:"Projects" tag:important
+view: tiles
+fields: image, title, excerpt, tags
+sort: updated_time DESC
+-->
+```
+
+#### Tile View with Colored Note
+
+This example uses the tile view and highlights a specific note with a "Red" tag.
+```yml
+<!-- note-overview-plugin
+search: notebook:"Projects"
+view: tiles
+tile:
+  maxTitleLength: 40
+  maxSnippetLength: 80
+-->
+```
+*(To make a tile red, ensure one of the notes found by `notebook:"Projects"` has the tag `Red`)*
+
+#### Default Tile View (No Search Specified)
+
+This will show the 100 most recently updated notes in a tile view.
+```yml
+<!-- note-overview-plugin
+-->
+```
 
 ### Details option
 

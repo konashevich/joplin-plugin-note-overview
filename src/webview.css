@@ -5,10 +5,10 @@
 }
 
 #noteoverview {
-  /* Existing styles might be adjusted or removed if 
+  /* Existing styles might be adjusted or removed if
      .note-overview-container replaces its functionality.
-     For now, let's assume #noteoverview might be a wrapper 
-     around .note-overview-container or be removed later. 
+     For now, let's assume #noteoverview might be a wrapper
+     around .note-overview-container or be removed later.
      If it's a direct parent, some properties might conflict or be redundant.
      Let's keep existing styles for now and add new ones.
   */
@@ -136,14 +136,14 @@
 
 /* Special handling for White tile */
 .note-tile-color-white {
-  border-color: rgb(220, 220, 220) !important; 
+  border-color: rgb(220, 220, 220) !important;
   background-color: rgba(255, 255, 255, 0.8) !important;
 }
-.note-tile-color-white .note-tile-title, 
-.note-tile-color-white .note-tile-snippet, 
+.note-tile-color-white .note-tile-title,
+.note-tile-color-white .note-tile-snippet,
 .note-tile-color-white .note-tile-tag,
-.note-tile-color-white .note-tile-title a { 
-  color: var(--joplin-color, #333333) !important; 
+.note-tile-color-white .note-tile-title a {
+  color: var(--joplin-color, #333333) !important;
 }
 
 /* Special handling for Black tile */
@@ -151,12 +151,12 @@
   border-color: rgb(0, 0, 0) !important;
   background-color: rgba(0, 0, 0, 0.2) !important;
 }
-.note-tile-color-black .note-tile-title, 
-.note-tile-color-black .note-tile-snippet, 
+.note-tile-color-black .note-tile-title,
+.note-tile-color-black .note-tile-snippet,
 .note-tile-color-black .note-tile-tag,
-.note-tile-color-black .note-tile-title a { 
-  color: var(--joplin-background-color, #ffffff) !important; 
+.note-tile-color-black .note-tile-title a {
+  color: var(--joplin-background-color, #ffffff) !important;
 }
-.note-tile-color-black .note-tile-tag { 
-  background-color: rgba(255, 255, 255, 0.2) !important; 
+.note-tile-color-black .note-tile-tag {
+  background-color: rgba(255, 255, 255, 0.2) !important;
 }

@@ -38,7 +38,7 @@ export namespace noteoverview {
   const SUPPORTED_COLORS: { [key: string]: string } = {
     "red": "red", "blue": "blue", "yellow": "yellow", "green": "green",
     "orange": "orange", "purple": "purple", "black": "black", "white": "white",
-    "pink": "pink", "brown": "brown", "gray": "gray", "grey": "gray" 
+    "pink": "pink", "brown": "brown", "gray": "gray", "grey": "gray"
   };
 
   // Default settings for overview
@@ -53,7 +53,7 @@ export namespace noteoverview {
   export async function getImageNr(
     body: string,
     imagrNr: number,
-    imageSettings: any 
+    imageSettings: any
   ): Promise<string> {
     logging.verbose("func: getImageNr");
     const regExresourceId =
@@ -61,7 +61,7 @@ export namespace noteoverview {
     let ids = [];
     let imageId = null;
     let regExMatch = null;
-    if (typeof body !== 'string') body = ''; 
+    if (typeof body !== 'string') body = '';
     while ((regExMatch = regExresourceId.exec(body)) != null) {
       ids.push(regExMatch["groups"]["resourceId"]);
     }
@@ -73,11 +73,11 @@ export namespace noteoverview {
     const width =
       imageSettings && imageSettings.hasOwnProperty("width")
         ? imageSettings["width"]
-        : "200"; 
+        : "200";
     const height =
       imageSettings && imageSettings.hasOwnProperty("height")
         ? imageSettings["height"]
-        : "200"; 
+        : "200";
     const noDimensions =
       imageSettings && imageSettings.hasOwnProperty("noDimensions")
         ? imageSettings["noDimensions"]
@@ -89,13 +89,13 @@ export namespace noteoverview {
     const altText =
       imageSettings && imageSettings.hasOwnProperty("alt")
         ? imageSettings["alt"]
-        : "Note image"; 
+        : "Note image";
 
     if (ids && ids.length > 0) {
       if (ids.length >= imagrNr) {
         imageId = ids[imagrNr - 1];
       } else if (exactnr === false) {
-        imageId = ids[ids.length - 1]; 
+        imageId = ids[ids.length - 1];
       }
 
       if (imageId) {
@@ -104,17 +104,17 @@ export namespace noteoverview {
 
         if (noDimensions) {
           return `<img src=':/${imageId}'${classAttribute}${altAttribute}>`;
-        } else if (width && height) { 
+        } else if (width && height) {
           return `<img src=':/${imageId}' width='${escapeHtml(width)}' height='${escapeHtml(height)}'${classAttribute}${altAttribute}>`;
         } else {
-           if (regExresourceId.source.includes("<img")) { 
-            return `<img src=':/${imageId}'${classAttribute}${altAttribute}>`; 
+           if (regExresourceId.source.includes("<img")) {
+            return `<img src=':/${imageId}'${classAttribute}${altAttribute}>`;
           }
           return `![](:/${imageId})`;
         }
       }
     }
-    return ""; 
+    return "";
   }
 
   export async function getTags(noteId): Promise<string[]> {
@@ -129,7 +129,7 @@ export namespace noteoverview {
         });
       } catch (e) {
         logging.error("getTags " + e);
-        return []; 
+        return [];
       }
       if (tags && tags.items) {
         for (const tag of tags.items) {
@@ -170,17 +170,17 @@ export namespace noteoverview {
     msg.push('<div id="noteoverview">');
     msg.push("<h3>Noteoverview error</h3>");
     msg.push("<p><b>Note:</b>");
-    msg.push(escapeHtml(noteTitle)); 
+    msg.push(escapeHtml(noteTitle));
     msg.push("</p>");
     if (info) {
       msg.push("<p>");
-      msg.push(info); 
+      msg.push(info);
       msg.push("</p>");
     }
     if (noteoverviewSettings) {
       msg.push("<div>");
       msg.push(
-        escapeHtml(noteoverviewSettings).replace(/\n/g, "<br/>").replace(/\s/g, "&nbsp;") 
+        escapeHtml(noteoverviewSettings).replace(/\n/g, "<br/>").replace(/\s/g, "&nbsp;")
       );
       msg.push("</div>");
     }
@@ -197,7 +197,7 @@ export namespace noteoverview {
         .replace(/(?:\|)/g, "\\|")
         .replace(/(?:\r\n|\r|\n)/g, "");
     } else {
-      return ""; 
+      return "";
     }
   }
 
@@ -268,7 +268,7 @@ export namespace noteoverview {
       return "";
     }
     let color = coloring["todo"][colorType];
-    if (typeof color === 'string') { 
+    if (typeof color === 'string') {
         if (color.indexOf(";") !== -1) {
         color = color.split(";");
         } else if (color.indexOf(",") !== -1) {
@@ -277,7 +277,7 @@ export namespace noteoverview {
         color = [color, color];
         }
     } else {
-        color = ["", ""]; 
+        color = ["", ""];
     }
     if (type === "todo_due") return color[0];
     else if (type === "todo_completed") return color[1];
@@ -368,7 +368,7 @@ export namespace noteoverview {
 
   export async function getMarkdownExcerpt(
     markdown: string,
-    excerptSettings: any 
+    excerptSettings: any
   ): Promise<string> {
     const maxExcerptLength =
       excerptSettings && excerptSettings.hasOwnProperty("maxlength")
@@ -440,13 +440,13 @@ export namespace noteoverview {
     imageName: boolean,
     removeNewLine: boolean
   ): Promise<string> {
-    if (typeof content !== 'string') content = ''; 
+    if (typeof content !== 'string') content = '';
     if (imageName === false) {
       content = content.replace(/(!\[)([^\]]+)(\]\([^\)]+\))/g, "$1$3");
     }
     if (removeMd === true) {
       let processedMd = remark().use(strip).processSync(content);
-      content = processedMd["contents"] ? processedMd["contents"].toString() : ""; 
+      content = processedMd["contents"] ? processedMd["contents"].toString() : "";
       content = content.substring(0, content.length - 1);
       content = content.replace(/(\s\\?~~|~~\s)/g, " ");
       content = content.replace(/(\s\\?==|==\s)/g, " ");
@@ -515,9 +515,9 @@ export namespace noteoverview {
           });
         } catch (error) {
           logging.error(error.message);
-          queryFolders = null; 
+          queryFolders = null;
         }
-        if (queryFolders && queryFolders.items) { 
+        if (queryFolders && queryFolders.items) {
             for (let queryFolderKey in queryFolders.items) {
             const id = queryFolders.items[queryFolderKey].id;
             joplinNotebooks[id] = {
@@ -527,7 +527,7 @@ export namespace noteoverview {
             };
             }
         }
-      } while (queryFolders && queryFolders.has_more); 
+      } while (queryFolders && queryFolders.has_more);
       const getParentName = (id: string, notebookPath: string[]) => {
         if (id === "") return;
         if (joplinNotebooks[id]) {
@@ -557,7 +557,7 @@ export namespace noteoverview {
       logging.error("getNoteSize " + e);
       return "n/a";
     }
-    size = note && note.body ? note.body.length : 0; 
+    size = note && note.body ? note.body.length : 0;
     let pageNum = 1;
     let resources;
     do {
@@ -571,12 +571,12 @@ export namespace noteoverview {
         logging.error("getNoteSize resources " + e);
         return "n/a";
       }
-      if (resources && resources.items) { 
+      if (resources && resources.items) {
         for (const resource of resources.items) {
-            size += Number.parseInt(resource.size) || 0; 
+            size += Number.parseInt(resource.size) || 0;
         }
       }
-    } while (resources && resources.has_more); 
+    } while (resources && resources.has_more);
     return await noteoverview.humanFrendlyStorageSize(size);
   }
 
@@ -592,14 +592,14 @@ export namespace noteoverview {
       "noteVisiblePanes"
     );
     if (
-      slectedNote && slectedNote.id === noteId && 
+      slectedNote && slectedNote.id === noteId &&
       codeView === true &&
       (noteVisiblePanes === "viewer" || userTriggerd === true)
     ) {
       logging.verbose("   Use replaceSelection");
       await joplin.commands.execute("textSelectAll");
       await joplin.commands.execute("replaceSelection", newBodyStr);
-    } else if (!slectedNote || slectedNote.id !== noteId) { 
+    } else if (!slectedNote || slectedNote.id !== noteId) {
       logging.verbose("   Use API (note not selected or different note selected)");
       await joplin.data.put(["notes", noteId], null, {
         body: newBodyStr,
@@ -615,20 +615,20 @@ export namespace noteoverview {
     begin: boolean,
     end: boolean
   ): Promise<string> {
-    if (typeof content !== 'string') return ''; 
+    if (typeof content !== 'string') return '';
     if (end === true && content.length > 0) {
-      if (content.charCodeAt(content.length - 1) == 10) { 
+      if (content.charCodeAt(content.length - 1) == 10) {
         content = content.substring(0, content.length - 1);
       }
-      if (content.length > 0 && content.charCodeAt(content.length - 1) == 13) { 
+      if (content.length > 0 && content.charCodeAt(content.length - 1) == 13) {
         content = content.substring(0, content.length - 1);
       }
     }
     if (begin === true && content.length > 0) {
-      if (content.charCodeAt(0) == 10) { 
+      if (content.charCodeAt(0) == 10) {
         content = content.substring(1, content.length);
       }
-      if (content.length > 0 && content.charCodeAt(0) == 13) { 
+      if (content.length > 0 && content.charCodeAt(0) == 13) {
         content = content.substring(1, content.length);
       }
     }
@@ -666,13 +666,13 @@ export namespace noteoverview {
         limit: 10,
         page: pageNum++,
       });
-      if (overviewNotes && overviewNotes.items) { 
+      if (overviewNotes && overviewNotes.items) {
         for (let overviewNotesKey in overviewNotes.items) {
             const noteId: string = overviewNotes.items[overviewNotesKey].id;
             await noteoverview.update(noteId, userTriggerd);
         }
       }
-    } while (overviewNotes && overviewNotes.has_more); 
+    } while (overviewNotes && overviewNotes.has_more);
     logging.info("all overviews checked");
   }
 
@@ -682,21 +682,21 @@ export namespace noteoverview {
   ): Promise<Boolean> {
     if (
       settings && settings.hasOwnProperty("excerpt") &&
-      settings["excerpt"] && settings["excerpt"].hasOwnProperty("regex") 
+      settings["excerpt"] && settings["excerpt"].hasOwnProperty("regex")
     ) {
       const flags =
         settings["excerpt"].hasOwnProperty("regexflags")
           ? settings["excerpt"]["regexflags"]
           : false;
       try {
-        if (flags !== false) new RegExp(settings["excerpt"]["regex"], flags); 
-        else new RegExp(settings["excerpt"]["regex"]); 
+        if (flags !== false) new RegExp(settings["excerpt"]["regex"], flags);
+        else new RegExp(settings["excerpt"]["regex"]);
       } catch (error) {
         logging.error("RegEx parse error: " + error.message);
         await noteoverview.showError(
           title,
           i18n.__("msg.error.regexParseError") + "</br>" + error.message,
-          settings["excerpt"]["regex"] 
+          settings["excerpt"]["regex"]
         );
         return false;
       }
@@ -708,7 +708,7 @@ export namespace noteoverview {
     const note = await joplin.data.get(["notes", noteId], {
       fields: ["id", "title", "body"],
     });
-    if (!note) { 
+    if (!note) {
         logging.warn(`Note not found: ${noteId}`);
         return;
     }
@@ -718,7 +718,7 @@ export namespace noteoverview {
     let regExMatch = null;
     let startOrgTextIndex = 0;
     let newNoteBody: string[] = [];
-    const currentNoteBody = note.body || ""; 
+    const currentNoteBody = note.body || "";
     while ((regExMatch = noteOverviewRegEx.exec(currentNoteBody)) != null) {
       const settingsBlock = regExMatch["groups"]["settings"];
       const startIndex = regExMatch.index;
@@ -739,23 +739,23 @@ export namespace noteoverview {
         return;
       }
       if (
-        noteOverviewSettings && 
+        noteOverviewSettings &&
         noteOverviewSettings.hasOwnProperty("update") &&
         noteOverviewSettings["update"] == "manual"
       ) {
         logging.verbose("noteoverview update setting: manual");
         if (userTriggerd == false) {
           logging.verbose("skip update, not user triggerd");
-          newNoteBody.push(regExMatch[0]); 
+          newNoteBody.push(regExMatch[0]);
           startOrgTextIndex = endIndex;
           continue;
         }
         const selectedNote = await joplin.workspace.selectedNote();
-        if (selectedNote && userTriggerd == true && noteId !== selectedNote.id) { 
+        if (selectedNote && userTriggerd == true && noteId !== selectedNote.id) {
           logging.verbose(
             "skip update, selected note " + selectedNote.id + " <> " + noteId
           );
-          newNoteBody.push(regExMatch[0]); 
+          newNoteBody.push(regExMatch[0]);
           startOrgTextIndex = endIndex;
           continue;
         }
@@ -769,7 +769,7 @@ export namespace noteoverview {
       noteOverviewSettings["searchWithVars"] = noteOverviewSettings["search"] || ""; // Store original or empty
       // Defaulting logic will be handled in getOptions. Here, we just pass what's in the block.
       // The replaceSearchVars will be called within getOptions or on the resulting search string.
-      
+
       logging.verbose("Original search from YAML: " + noteOverviewSettings["searchWithVars"]);
 
       if (startOrgTextIndex != startIndex) {
@@ -791,7 +791,7 @@ export namespace noteoverview {
       if (regExMatch[4] === "<!--endoverview-->") {
         startOrgTextIndex = endIndex;
       } else {
-        startOrgTextIndex = startIndex + regExMatch[1].length + noteOverviewRenderedContent.join('\n').length -1; 
+        startOrgTextIndex = startIndex + regExMatch[1].length + noteOverviewRenderedContent.join('\n').length -1;
       }
     }
     if (startOrgTextIndex < currentNoteBody.length) {
@@ -833,7 +833,7 @@ export namespace noteoverview {
       settings.view = userSettings.view || 'table'; // Default to table if search is present but view is not
       settings.fields = userSettings.fields || (settings.view === 'tiles' ? DEFAULT_FIELDS_FOR_TILES : DEFAULT_FIELDS_FOR_TABLE_LIST);
     }
-    
+
     // Process search string for variable replacements (e.g. {{moments}})
     // This should happen AFTER defaults are set, on the potentially defaulted search string.
     if (settings.search) {
@@ -887,7 +887,7 @@ export namespace noteoverview {
     fields: string[]
   ): Promise<string[]> {
     const additionalFields: string[] = [];
-    if (!fields) return additionalFields; 
+    if (!fields) return additionalFields;
     if (fields.includes("todo_due")) {
       additionalFields.push("todo_completed");
     }
@@ -916,9 +916,9 @@ export namespace noteoverview {
     // Get processed options, including defaults if applicable
     const options = await noteoverview.getOptions(overviewSettingsFromYaml);
     logging.verbose(`func: getOverviewContent for note ${noteTitle} (${noteId}), view: ${options.view}`);
-    
+
     const query = options.search; // Use the processed search query from options
-    let finalContentLayout: string[] = []; 
+    let finalContentLayout: string[] = [];
 
     if (query) {
       let fields = [];
@@ -948,7 +948,7 @@ export namespace noteoverview {
       if (desiredNoteLimit !== -1 && desiredNoteLimit < joplinQueryLimit) {
         joplinQueryLimit = desiredNoteLimit;
       }
-      
+
       let queryNotesResult = null;
       let pageQueryNotes = 1;
       const collectedNotes: any[] = [];
@@ -960,7 +960,7 @@ export namespace noteoverview {
             fields: "id, parent_id, " + dbFieldsArray.join(","),
             order_by: options.orderBy, // Use processed orderBy from options
             order_dir: options.orderDir, // Use processed orderDir from options
-            limit: joplinQueryLimit, 
+            limit: joplinQueryLimit,
             page: pageQueryNotes++,
           });
         } catch (error) {
@@ -973,13 +973,13 @@ export namespace noteoverview {
 
         if (queryNotesResult && queryNotesResult.items) {
           for (const item of queryNotesResult.items) {
-            if (item.id === noteId) continue; 
+            if (item.id === noteId) continue;
             if (desiredNoteLimit !== -1 && collectedNotes.length >= desiredNoteLimit) break;
             collectedNotes.push(item);
           }
         }
       } while (queryNotesResult && queryNotesResult.has_more && (desiredNoteLimit === -1 || collectedNotes.length < desiredNoteLimit));
-      
+
       noteCount = collectedNotes.length;
       let generatedViewSpecificContent: string[] = [];
 
@@ -1004,17 +1004,17 @@ export namespace noteoverview {
         if (options.listview.prefix) listEntries.unshift(options.listview.prefix);
         if (options.listview.suffix) listEntries.push(options.listview.suffix);
         generatedViewSpecificContent = options.listview.linebreak === false ? [listEntries.join("")] : listEntries;
-      } else { 
+      } else {
         const tableEntries: string[] = [];
         for (const noteItem of collectedNotes) {
           tableEntries.push(await noteoverview.getNoteInfoAsTable(fields, noteItem, options));
         }
         generatedViewSpecificContent = [...(await noteoverview.getTableHeader(headerFields)), ...tableEntries];
       }
-      
-      finalContentLayout.push(...generatedViewSpecificContent); 
-      await addNoteCount(finalContentLayout, noteCount, options); 
-      await addHTMLDetailsTag(finalContentLayout, noteCount, options); 
+
+      finalContentLayout.push(...generatedViewSpecificContent);
+      await addNoteCount(finalContentLayout, noteCount, options);
+      await addHTMLDetailsTag(finalContentLayout, noteCount, options);
     }
 
     // Pass the original, unprocessed YAML settings to createSettingsBlock
@@ -1028,13 +1028,13 @@ export namespace noteoverview {
     noteCount: number,
     options: OverviewOptions
   ) {
-    if (options.details && options.details.summary) { 
+    if (options.details && options.details.summary) {
       const summary = options.details.summary.replace(
         "{{count}}",
         noteCount.toString()
       );
       overview.unshift(`<summary>${escapeHtml(summary)}</summary>`);
-      overview.unshift(`<details ` + (options.details.open === true ? ` open` : ``) + `>`); 
+      overview.unshift(`<details ` + (options.details.open === true ? ` open` : ``) + `>`);
       overview.push("</details>");
     }
   }
@@ -1046,7 +1046,7 @@ export namespace noteoverview {
   ) {
     if (
       options.count &&
-      (options.count.enable || options.count.enable !== false) 
+      (options.count.enable || options.count.enable !== false)
     ) {
       const text =
         options.count.text && options.count.text !== ""
@@ -1060,16 +1060,16 @@ export namespace noteoverview {
             overview.splice(summaryIndex + 1, 0, escapeHtml(countStr));
         } else if (detailsTagIndex !== -1) {
             overview.splice(detailsTagIndex + 1, 0, escapeHtml(countStr));
-        } 
-        else {
-            overview.unshift(escapeHtml(countStr)); 
         }
-      } else { 
+        else {
+            overview.unshift(escapeHtml(countStr));
+        }
+      } else {
         const detailsCloseTagIndex = overview.findIndex(line => line.startsWith("</details>"));
         if (detailsCloseTagIndex !== -1) {
             overview.splice(detailsCloseTagIndex, 0, escapeHtml(countStr));
         } else {
-            overview.push(escapeHtml(countStr)); 
+            overview.push(escapeHtml(countStr));
         }
       }
     }
@@ -1077,7 +1077,7 @@ export namespace noteoverview {
 
   export async function replaceFieldPlaceholder(
     text: string,
-    noteFields: any, 
+    noteFields: any,
     options: OverviewOptions
   ): Promise<string> {
     const asyncStringReplace = async (
@@ -1106,24 +1106,24 @@ export namespace noteoverview {
       );
     } catch (error) {
       logging.error(error.message);
-      await noteoverview.showError("", error.message, ""); 
+      await noteoverview.showError("", error.message, "");
       throw error;
     }
   }
 
   export async function getTableHeader(header: string[]) {
     const mdTableHeader: string[] = [];
-    if (!header) return mdTableHeader; 
-    mdTableHeader.push("| " + header.map(h => escapeHtml(h)).join(" | ") + " |"); 
+    if (!header) return mdTableHeader;
+    mdTableHeader.push("| " + header.map(h => escapeHtml(h)).join(" | ") + " |");
     mdTableHeader.push("|" + " --- |".repeat(header.length));
     return mdTableHeader;
   }
 
   export async function getNoteInfoAsListView(
-    noteFields: any, 
+    noteFields: any,
     options: OverviewOptions
   ): Promise<string> {
-    let info = options.listview && options.listview.text 
+    let info = options.listview && options.listview.text
       ? options.listview.text
       : "[{{title}}](/:{{id}})";
     info = await noteoverview.replaceFieldPlaceholder(
@@ -1136,12 +1136,12 @@ export namespace noteoverview {
 
   export async function getNoteInfoAsTable(
     fields: string[],
-    noteFields: any, 
+    noteFields: any,
     options: OverviewOptions
   ): Promise<string> {
     const info: string[] = [];
-    options.escapeForTable = true; 
-    if (!fields) return "|" + info.join("|") + "|"; 
+    options.escapeForTable = true;
+    if (!fields) return "|" + info.join("|") + "|";
     for (let field of fields) {
       info.push(await noteoverview.getFieldValue(field, noteFields, options));
     }
@@ -1156,28 +1156,28 @@ export namespace noteoverview {
     let imageHtml = "";
     if (noteFields.body) {
       const imageSettings = {
-        nr: 1, 
+        nr: 1,
         exactnr: true,
-        noDimensions: true, 
-        class: "note-tile-image", 
-        alt: `Image for note: ${title.substring(0,30)}...` 
+        noDimensions: true,
+        class: "note-tile-image",
+        alt: `Image for note: ${title.substring(0,30)}...`
       };
       const imgSrc = await noteoverview.getImageNr(noteFields.body, imageSettings.nr, imageSettings);
-      if (imgSrc && !imgSrc.startsWith("![]")) { 
-        imageHtml = imgSrc; 
+      if (imgSrc && !imgSrc.startsWith("![]")) {
+        imageHtml = imgSrc;
       }
     }
     let snippet = "";
     if (noteFields.body) {
       const maxSnippetLength = options.tile && options.tile.maxSnippetLength ? options.tile.maxSnippetLength : 100;
-      const excerptSettings = { 
+      const excerptSettings = {
         maxlength: maxSnippetLength,
         removemd: true,
         removenewline: true,
-        ...(options.excerptSettings || {}) 
+        ...(options.excerptSettings || {})
       };
       snippet = await noteoverview.getMarkdownExcerpt(noteFields.body, excerptSettings);
-      snippet = escapeHtml(snippet); 
+      snippet = escapeHtml(snippet);
     }
     const noteTags = await noteoverview.getTags(noteFields.id);
     let tagsHtml = "";
@@ -1187,7 +1187,7 @@ export namespace noteoverview {
         const lowerTag = tag.toLowerCase();
         if (SUPPORTED_COLORS[lowerTag]) {
           tileColorClass = `note-tile-color-${SUPPORTED_COLORS[lowerTag]}`;
-          break; 
+          break;
         }
       }
       tagsHtml = noteTags.map(tag => `<span class="note-tile-tag">${escapeHtml(tag)}</span>`).join(" ");
@@ -1207,7 +1207,7 @@ export namespace noteoverview {
   }
 
   export async function removeNoteoverviewCode(data: string): Promise<string> {
-    if (typeof data !== 'string') return ''; 
+    if (typeof data !== 'string') return '';
     data = data.replace(
       /(?<!```\n)(?<!``` \n)(<!--\s?note-overview-plugin([\w\W]*?)-->)/gi,
       "REMOVE_NOTOVERVIEW_LINE"
@@ -1228,12 +1228,12 @@ export namespace noteoverview {
 
   export async function getFieldValue(
     field: string,
-    fields: any, 
+    fields: any,
     options: OverviewOptions
   ): Promise<string> {
     logging.verbose("func: getFieldValue for " + field);
     let value = "";
-    if (!fields) return " "; 
+    if (!fields) return " ";
     switch (field) {
       case "title":
         value = `[${escapeHtml(fields.title || '')}](:/${fields.id || ''})`;
@@ -1245,8 +1245,8 @@ export namespace noteoverview {
       case "todo_due":
       case "todo_completed":
         const dateValue = fields[field];
-        if (!dateValue) { 
-            value = ""; 
+        if (!dateValue) {
+            value = "";
             break;
         }
         const dateObject = new Date(dateValue);
@@ -1257,7 +1257,7 @@ export namespace noteoverview {
         );
         const htmlAttr: string[] = [];
         if (value !== "" && options.datetimeSettings.humanize.enabled) {
-          htmlAttr.push(`title="${escapeHtml(value)}"`); 
+          htmlAttr.push(`title="${escapeHtml(value)}"`);
           value = await noteoverview.getDateHumanized(
             dateObject.getTime(),
             options.datetimeSettings.humanize.withSuffix
@@ -1273,14 +1273,14 @@ export namespace noteoverview {
               field
             );
             if (color !== "") {
-              htmlAttr.push(`color="${escapeHtml(color)}"`); 
+              htmlAttr.push(`color="${escapeHtml(color)}"`);
             }
             break;
         }
         if (htmlAttr.length) {
-          value = `<font ${htmlAttr.join(" ")}>${escapeHtml(value)}</font>`; 
+          value = `<font ${htmlAttr.join(" ")}>${escapeHtml(value)}</font>`;
         } else {
-          value = escapeHtml(value); 
+          value = escapeHtml(value);
         }
         break;
       case "status":
@@ -1293,14 +1293,14 @@ export namespace noteoverview {
         } else {
           value = options.statusText["note"];
         }
-        value = escapeHtml(value); 
+        value = escapeHtml(value);
         break;
       case "excerpt":
         value = await noteoverview.getMarkdownExcerpt(
           fields["body"],
           options.excerptSettings
         );
-        value = escapeHtml(value); 
+        value = escapeHtml(value);
         break;
       case "image":
         value = await noteoverview.getImageNr(
@@ -1323,7 +1323,7 @@ export namespace noteoverview {
         break;
       case "size":
         value = await noteoverview.getNoteSize(fields["id"]);
-        value = escapeHtml(value); 
+        value = escapeHtml(value);
         break;
       case "tags":
         value = (await noteoverview.getTags(fields["id"])).map(t => escapeHtml(t)).join(", ");
@@ -1345,7 +1345,7 @@ export namespace noteoverview {
           options.link && options.link.hasOwnProperty("html")
             ? options.link["html"]
             : false;
-        const sourceUrl = fields["source_url"] || ""; 
+        const sourceUrl = fields["source_url"] || "";
         if (htmlLink) {
           value = `<a href="${escapeHtml(sourceUrl)}">${escapeHtml(caption)}</a>`;
         } else {
@@ -1353,13 +1353,13 @@ export namespace noteoverview {
         }
         break;
       default:
-        value = fields[field] !== undefined && fields[field] !== null ? fields[field].toString() : ""; 
-        value = escapeHtml(value); 
+        value = fields[field] !== undefined && fields[field] !== null ? fields[field].toString() : "";
+        value = escapeHtml(value);
     }
-    if (options.escapeForTable === true && !field.match(/^(image|link)$/)) { 
+    if (options.escapeForTable === true && !field.match(/^(image|link)$/)) {
       value = await noteoverview.escapeForTable(value);
     }
-    if (value === "" || value === undefined || value === null) value = " "; 
+    if (value === "" || value === undefined || value === null) value = " ";
     return value;
   }
 
@@ -1404,7 +1404,7 @@ export namespace noteoverview {
 
   export async function deleteLogFile() {
     logging.verbose("Delete log file");
-    if (logFile && fs.existsSync(logFile)) { 
+    if (logFile && fs.existsSync(logFile)) {
       try {
         await fs.unlinkSync(logFile);
       } catch (e) {
@@ -1417,14 +1417,14 @@ export namespace noteoverview {
     logging.info("Note overview plugin started!");
     await noteoverview.configureTranslation();
     await settings.register();
-    await noteoverview.setupLogging(); 
-    await noteoverview.deleteLogFile(); 
+    await noteoverview.setupLogging();
+    await noteoverview.deleteLogFile();
     noteoverviewDialog = await joplin.views.dialogs.create(
       "noteoverviewDialog"
     );
     await joplin.commands.register({
       name: "createNoteOverview",
-      label: i18n ? i18n.__("command.createNoteOverview") : "Create Note Overview", 
+      label: i18n ? i18n.__("command.createNoteOverview") : "Create Note Overview",
       execute: async () => {
         noteoverview.updateAll(true);
       },
@@ -1439,19 +1439,19 @@ export namespace noteoverview {
     });
     const syncTarget = await joplin.settings.globalValue("sync.target");
     const updateInterval = await joplin.settings.value("updateInterval");
-    if (syncTarget === 0 && updateInterval > 0) { 
+    if (syncTarget === 0 && updateInterval > 0) {
       logging.verbose("set first update on timer (no sync or file system sync)");
-      await noteoverview.setTimer(1); 
-    } else if (syncTarget !==0 ) { 
+      await noteoverview.setTimer(1);
+    } else if (syncTarget !==0 ) {
         logging.verbose("set update on onSyncComplete event");
-        joplin.workspace.onSyncComplete(async () => { 
+        joplin.workspace.onSyncComplete(async () => {
             await noteoverview.updateOnSyncComplete();
         });
         if (!firstSyncCompleted) {
             logging.verbose("Performing initial update check as firstSyncCompleted is false.");
-            await noteoverview.updateAll(false); 
+            await noteoverview.updateAll(false);
         }
-    } else { 
+    } else {
         logging.verbose("Update on demand only (no sync target configured and update interval is 0).");
     }
   }
@@ -1463,7 +1463,7 @@ export namespace noteoverview {
     );
     if (!firstSyncCompleted) {
       logging.verbose("firstSyncCompleted event processing");
-      firstSyncCompleted = true; 
+      firstSyncCompleted = true;
       await noteoverview.updateAll(false);
       const updateInterval = await joplin.settings.value("updateInterval");
       if (updateInterval > 0) {
@@ -1487,7 +1487,7 @@ export namespace noteoverview {
   }
 
   export async function setTimer(updateInterval: number) {
-    if (timer) clearTimeout(timer); 
+    if (timer) clearTimeout(timer);
     timer = null;
     if (updateInterval > 0) {
       logging.verbose("timer set to " + updateInterval + " minutes");
@@ -1512,10 +1512,10 @@ export namespace noteoverview {
 
   export async function replaceSearchVars(query: string): Promise<string> {
     logging.verbose("replaceSearchVars input query: " + query);
-    if (typeof query !== 'string') return ''; 
+    if (typeof query !== 'string') return '';
 
     const joplinLocale = await joplin.settings.globalValue("locale");
-    const momentsLocale = joplinLocale ? joplinLocale.split("_")[0] : 'en'; 
+    const momentsLocale = joplinLocale ? joplinLocale.split("_")[0] : 'en';
 
     const finalQuery = query.replace(/{{moments:(?<format>[^}]+)}}/g, (match, formatString) => {
       let now = new Date(Date.now());
@@ -1523,7 +1523,7 @@ export namespace noteoverview {
       if (momentsLocale) momentDate.locale(momentsLocale);
       const modifyDateRegEx = /( modify:)(?<modify>.*)/;
       const modifyDateMatch = formatString.match(modifyDateRegEx);
-      let actualFormatString = formatString.replace(modifyDateRegEx, ""); 
+      let actualFormatString = formatString.replace(modifyDateRegEx, "");
       if (modifyDateMatch && modifyDateMatch.groups && modifyDateMatch.groups.modify) {
         let actions = [];
         if (modifyDateMatch.groups.modify.match(",") !== null) {
@@ -1532,9 +1532,9 @@ export namespace noteoverview {
           actions.push(modifyDateMatch.groups.modify);
         }
         for (const action of actions) {
-          let operation = action.substring(0, 1); 
+          let operation = action.substring(0, 1);
           let quantityStr = action.substring(1, action.length - 1);
-          let type = action.substring(action.length - 1, action.length); 
+          let type = action.substring(action.length - 1, action.length);
           let quantity = parseInt(quantityStr, 10);
           if (!isNaN(quantity)) {
             try {
@@ -1560,26 +1560,26 @@ export namespace noteoverview {
         const joplinLocale = await joplin.settings.globalValue("locale") || "en_US";
         const installationDir = await joplin.plugins.installationDir();
         i18n = new I18n({
-        locales: ["en_US", "de_DE"], 
+        locales: ["en_US", "de_DE"],
         defaultLocale: "en_US",
-        fallbacks: { "en_*": "en_US", "de_*": "de_DE" }, 
-        updateFiles: false, 
+        fallbacks: { "en_*": "en_US", "de_*": "de_DE" },
+        updateFiles: false,
         retryInDefaultLocale: true,
-        syncFiles: true, 
+        syncFiles: true,
         directory: path.join(installationDir, "locales"),
-        objectNotation: true, 
+        objectNotation: true,
         });
         i18n.setLocale(joplinLocale);
-        moment.locale(joplinLocale.split('_')[0]); 
+        moment.locale(joplinLocale.split('_')[0]);
     } catch (e) {
         logging.error("Error configuring translation: " + e.message);
         i18n = {
             setLocale: () => {},
             getLocale: () => "en_US",
-            __: (str) => str, 
+            __: (str) => str,
         };
-        moment.locale("en"); 
+        moment.locale("en");
     }
   }
-} 
+}
 export { logging, i18n };
