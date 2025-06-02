@@ -1,0 +1,3 @@
+[2025-06-02 07:23:49.158] [info]  check note: Overview Note (overviewNoteId123)
+[2025-06-02 07:23:49.217] [info]  Updating note overviewNoteId123. Setting markup_language to: 2
+[2025-06-02 07:23:49.218] [info]  Forcing re-open of note overviewNoteId123 to refresh view after markup_language change.

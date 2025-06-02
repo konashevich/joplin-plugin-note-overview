@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist_test", // Separate output directory for the test compile
+    "baseUrl": ".", // Base URL for path mappings
+    "paths": {
+      "api": ["api"], // Maps 'api' to './api/index.ts' (or .d.ts)
+      "api/*": ["api/*"] // Maps 'api/anything' to './api/anything'
+    },
+    "lib": ["es2015", "dom"], // Ensure DOM and necessary ES libs are included
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true // Might be useful if there are minor type conflicts with full @joplin/lib
+  },
+  "include": [
+    "src/**/*.ts" // Ensure it compiles the necessary files from src
+  ],
+  "exclude": [
+    "node_modules",
+    "dist" // Exclude the webpack output directory
+  ]
+}

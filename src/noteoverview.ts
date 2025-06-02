@@ -1,4 +1,4 @@
-import * as moment from "moment";
+import moment = require('moment');
 import joplin from "api";
 import * as naturalCompare from "string-natural-compare";
 import * as YAML from "yaml";
@@ -416,7 +416,7 @@ export namespace noteoverview {
       content = content.replace(/(!\[)([^\]]+)(\]\([^\)]+\))/g, "$1$3");
     }
     if (removeMd === true) {
-      let processedMd = remark().use(strip).processSync(content);
+      let processedMd = remark.default().use(strip.default).processSync(content);
       content = processedMd?.["contents"] ? processedMd["contents"].toString() : "";
       if (content.length > 0) content = content.substring(0, content.length - 1);
       content = content.replace(/(\s\\?~~|~~\s)/g, " ");
@@ -726,6 +726,13 @@ export namespace noteoverview {
           body: newNoteBodyStr,
           markup_language: finalNoteMarkupLanguage,
       });
+      const selectedNote = await joplin.workspace.selectedNote();
+      if (selectedNote && selectedNote.id === note.id) {
+        logging.info(`Forcing re-open of note ${note.id} to refresh view after markup_language change.`);
+        await joplin.commands.execute('openNote', note.id);
+        // It might also be useful to re-focus an element to ensure the view is active
+        // await joplin.commands.execute('focusElement', 'noteTitle'); // Or 'noteBody'
+      }
     } else {
         logging.info(`Note ${note.id} content and markup_language unchanged. No update needed.`);
     }
